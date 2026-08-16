@@ -13,14 +13,51 @@
 <body>
 
   <!-- Password Protection Screen -->
-  <div id="auth-overlay" class="overlay">
-    <div class="auth-box">
-      <h2>Enter Security PIN</h2>
-      <input type="password" id="pin-input" placeholder="Enter PIN (Default: 1234)">
-      <button onclick="unlockApp()">Unlock</button>
-      <p id="pin-error" class="error-msg"></p>
+ <!-- Login Screen with Forgot PIN Option -->
+<div id="auth-overlay" class="overlay">
+  <div class="auth-box">
+    <h2>Enter Security PIN</h2>
+    <input type="password" id="pin-input" placeholder="Enter PIN" inputmode="numeric">
+    <button class="btn-primary" onclick="unlockApp()">Unlock</button>
+    <p id="pin-error" class="error-msg"></p>
+    
+    <div style="margin-top: 15px;">
+      <a href="javascript:void(0)" onclick="openForgotModal()" style="color: #2563eb; font-size: 13px; text-decoration: none;">Forgot PIN?</a>
     </div>
   </div>
+</div>
+
+<!-- Forgot / Reset PIN Modal -->
+<div id="forgot-modal" class="overlay hidden">
+  <div class="auth-box">
+    <h2>Reset Security PIN</h2>
+    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Enter your registered Recovery Phone Number</p>
+    <input type="tel" id="recovery-phone-input" placeholder="Enter Mobile Number">
+    <input type="password" id="reset-new-pin" placeholder="Enter New 4-digit PIN" inputmode="numeric">
+    
+    <div class="modal-buttons">
+      <button class="btn-primary" onclick="processPinReset()">Reset & Save PIN</button>
+      <button class="btn-del" onclick="closeForgotModal()">Cancel</button>
+    </div>
+    <p id="forgot-modal-msg" class="error-msg"></p>
+  </div>
+</div>
+
+<!-- Change PIN & Recovery Phone Modal (Inside Dashboard) -->
+<div id="pin-modal" class="overlay hidden">
+  <div class="auth-box">
+    <h2>Security Settings</h2>
+    <input type="password" id="current-pin" placeholder="Current PIN" inputmode="numeric">
+    <input type="password" id="new-pin" placeholder="New PIN (4 digits)" inputmode="numeric">
+    <input type="tel" id="new-phone" placeholder="Update Recovery Mobile No.">
+    
+    <div class="modal-buttons">
+      <button class="btn-primary" onclick="saveNewSecurityDetails()">Save Changes</button>
+      <button class="btn-del" onclick="closePinModal()">Cancel</button>
+    </div>
+    <p id="pin-modal-msg" class="error-msg"></p>
+  </div>
+</div>
 
   <!-- Main App -->
   <div id="app-container" class="container hidden">
