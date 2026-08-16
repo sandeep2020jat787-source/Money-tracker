@@ -21,9 +21,19 @@ try {
   console.error("Init Error:", e);
 }
 
-// Session Check on Page Load
+// Session Check on Page Load & Password Reset Listener
 async function checkCurrentSession() {
   if (!dbClient) return;
+  
+  dbClient.auth.onAuthStateChange(function(event, session) {
+    if (event === "PASSWORD_RECOVERY") {
+      document.getElementById("auth-overlay").classList.remove("hidden");
+      document.getElementById("auth-main-box").classList.add("hidden");
+      document.getElementById("auth-forgot-box").classList.add("hidden");
+      document.getElementById("auth-new-pass-box").classList.remove("hidden");
+    }
+  });
+
   var { data } = await dbClient.auth.getSession();
   if (data && data.session && data.session.user) {
     currentUser = data.session.user;
@@ -55,7 +65,7 @@ function toggleAuthMode() {
   }
 }
 
-// Auth Submission Handler
+// Auth Submission Handler (Login / Sign Up)
 async function handleAuth() {
   var email = document.getElementById("auth-email").value.trim();
   var password = document.getElementById("auth-password").value.trim();
@@ -85,6 +95,69 @@ async function handleAuth() {
   }
 }
 
+// Forgot Password Flow
+function openForgotPasswordModal() {
+  document.getElementById("auth-main-box").classList.add("hidden");
+  document.getElementById("auth-forgot-box").classList.remove("hidden");
+  document.getElementById("forgot-msg").innerText = "";
+}
+
+function closeForgotPasswordModal() {
+  document.getElementById("auth-forgot-box").classList.add("hidden");
+  document.getElementById("auth-main-box").classList.remove("hidden");
+  document.getElementById("forgot-msg").innerText = "";
+}
+
+async function sendPasswordResetEmail() {
+  var email = document.getElementById("forgot-email-input").value.trim();
+  var msg = document.getElementById("forgot-msg");
+
+  if (!email) {
+    msg.style.color = "#dc2626";
+    msg.innerText = "Please enter your email.";
+    return;
+  }
+
+  var currentUrl = window.location.href.split("#")[0];
+  var res = await dbClient.auth.resetPasswordForEmail(email, {
+    redirectTo: currentUrl
+  });
+
+  if (res.error) {
+    msg.style.color = "#dc2626";
+    msg.innerText = res.error.message;
+  } else {
+    msg.style.color = "#16a34a";
+    msg.innerText = "Recovery email sent! Please check your Inbox / Spam folder.";
+  }
+}
+
+async function updateNewPassword() {
+  var newPass = document.getElementById("new-password-input").value.trim();
+  var msg = document.getElementById("new-pass-msg");
+
+  if (newPass.length < 6) {
+    msg.style.color = "#dc2626";
+    msg.innerText = "Password must be at least 6 characters.";
+    return;
+  }
+
+  var res = await dbClient.auth.updateUser({ password: newPass });
+
+  if (res.error) {
+    msg.style.color = "#dc2626";
+    msg.innerText = res.error.message;
+  } else {
+    msg.style.color = "#16a34a";
+    msg.innerText = "Password updated successfully! Redirecting...";
+    setTimeout(function() {
+      document.getElementById("auth-new-pass-box").classList.add("hidden");
+      document.getElementById("auth-main-box").classList.remove("hidden");
+      handleLogout();
+    }, 1500);
+  }
+}
+
 // Logout Handler
 async function handleLogout() {
   if (dbClient) {
@@ -93,6 +166,9 @@ async function handleLogout() {
   currentUser = null;
   document.getElementById("app-container").classList.add("hidden");
   document.getElementById("auth-overlay").classList.remove("hidden");
+  document.getElementById("auth-main-box").classList.remove("hidden");
+  document.getElementById("auth-forgot-box").classList.add("hidden");
+  document.getElementById("auth-new-pass-box").classList.add("hidden");
   document.getElementById("auth-email").value = "";
   document.getElementById("auth-password").value = "";
 }
@@ -142,7 +218,7 @@ async function loadDataFromSupabase() {
   }
 }
 
-// Add Transaction (Linked with user_id)
+// Add Daily Transaction
 async function addTransaction(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -168,7 +244,7 @@ async function addTransaction(e) {
   await loadDataFromSupabase();
 }
 
-// Add Debt (Linked with user_id)
+// Add Debt / Receivable Entry
 async function addDebt(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -195,7 +271,7 @@ async function addDebt(e) {
   await loadDataFromSupabase();
 }
 
-// Add Loan (Linked with user_id)
+// Add Loan Record
 async function addLoan(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -217,7 +293,7 @@ async function addLoan(e) {
   await loadDataFromSupabase();
 }
 
-// Actions
+// Actions Handlers
 async function toggleSettleDebt(id, currentStatus) {
   if (dbClient) {
     await dbClient.from("debts").update({ is_settled: !currentStatus }).eq("id", id);
@@ -534,7 +610,7 @@ function renderAll() {
   applyFilters();
 }
 
-// Export CSV
+// Mobile CSV Export
 function exportToCSV() {
   var selectedMonth = document.getElementById("monthFilter").value;
   var dataToExport = transactions;

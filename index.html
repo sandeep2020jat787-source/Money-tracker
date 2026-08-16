@@ -16,9 +16,10 @@
 </head>
 <body>
 
-  <!-- Auth Screen (Login & Sign Up) -->
+  <!-- Auth Screen (Login / Sign Up / Forgot Password) -->
   <div id="auth-overlay" class="overlay">
-    <div class="auth-box">
+    <!-- Main Login / Sign Up Card -->
+    <div class="auth-box" id="auth-main-box">
       <h2 id="auth-title">Login to Account</h2>
       <input type="email" id="auth-email" placeholder="Enter Email" required>
       <input type="password" id="auth-password" placeholder="Enter Password (min 6 chars)" required>
@@ -26,10 +27,34 @@
       <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth()">Login</button>
       <p id="auth-error" class="error-msg"></p>
       
-      <div style="margin-top: 15px; font-size: 13px;">
-        <span id="auth-toggle-text">Don't have an account?</span>
-        <a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()" style="color: #2563eb; font-weight: 600; text-decoration: none; margin-left: 5px;">Sign Up</a>
+      <div style="margin-top: 15px; font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+        <div>
+          <span id="auth-toggle-text">Don't have an account?</span>
+          <a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()" style="color: #2563eb; font-weight: 600; text-decoration: none; margin-left: 5px;">Sign Up</a>
+        </div>
+        <div>
+          <a href="javascript:void(0)" onclick="openForgotPasswordModal()" style="color: #6b7280; text-decoration: none;">Forgot Password?</a>
+        </div>
       </div>
+    </div>
+
+    <!-- Send Reset Email Card -->
+    <div class="auth-box hidden" id="auth-forgot-box">
+      <h2>Reset Password</h2>
+      <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Enter your registered email. We'll send a password recovery link.</p>
+      <input type="email" id="forgot-email-input" placeholder="Registered Email">
+      <button class="btn-primary" onclick="sendPasswordResetEmail()">Send Recovery Link</button>
+      <button class="btn-clear" style="margin-top: 8px; width: 100%;" onclick="closeForgotPasswordModal()">Back to Login</button>
+      <p id="forgot-msg" class="error-msg"></p>
+    </div>
+
+    <!-- Set New Password Card (Triggered via Email Link) -->
+    <div class="auth-box hidden" id="auth-new-pass-box">
+      <h2>Set New Password</h2>
+      <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Enter your new password below</p>
+      <input type="password" id="new-password-input" placeholder="New Password (min 6 chars)">
+      <button class="btn-primary" onclick="updateNewPassword()">Update Password</button>
+      <p id="new-pass-msg" class="error-msg"></p>
     </div>
   </div>
 
@@ -121,7 +146,7 @@
           </form>
         </div>
 
-        <!-- Receivables & Payables Form -->
+        <!-- Receivables & Payables (Khata) Form -->
         <div class="box">
           <h2>Add Dues & Receivables</h2>
           <form id="debt-form" onsubmit="addDebt(event)">
@@ -240,6 +265,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=5"></script>
+  <script src="script.js?v=6"></script>
 </body>
 </html>
