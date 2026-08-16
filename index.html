@@ -148,7 +148,16 @@
 
   <!-- Main Application Container -->
   <div id="app-container" class="container hidden">
-    <!-- Top Navbar -->
+    
+    <!-- Top Greeting Banner -->
+    <div class="greeting-bar">
+      <div class="greeting-content">
+        <span class="greeting-badge" id="greeting-gesture">👋 Welcome</span>
+        <h3 id="user-greeting-heading">Hello, User! Ready to optimize your cash flow today?</h3>
+      </div>
+    </div>
+
+    <!-- Top Modern Navbar (Search removed) -->
     <nav class="navbar">
       <div class="nav-left">
         <div class="app-logo">APEX</div>
@@ -166,10 +175,6 @@
           <span class="ai-pulse"></span>
           🤖 Ask AI Sandy
         </button>
-
-        <div class="search-wrap">
-          <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search transactions, notes, people...">
-        </div>
 
         <div class="user-profile-pill">
           <img id="user-avatar-img" src="" alt="Profile" class="user-avatar">
@@ -247,7 +252,7 @@
     <div class="workspace-grid">
       <!-- Left Column: Forms -->
       <div class="forms-column">
-        <!-- Daily Transaction Form (With Cash vs Online Bank Selector) -->
+        <!-- Daily Transaction Form -->
         <div class="glass-box">
           <div class="box-head">
             <h3>⚡ Add Daily Transaction</h3>
@@ -268,7 +273,7 @@
               </div>
             </div>
 
-            <!-- Indian Banks Selection Dropdown (Shown when Online is selected) -->
+            <!-- Indian Banks Dropdown -->
             <div class="input-group" id="bank-select-group">
               <label>Select Bank / Payment Source</label>
               <select id="tx-bank-name">
@@ -542,6 +547,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=12"></script>
+  <script src="script.js?v=13"></script>
 </body>
 </html>

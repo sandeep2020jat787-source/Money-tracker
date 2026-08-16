@@ -24,7 +24,7 @@ try {
   console.error("Init Error:", e);
 }
 
-// Payment Mode Switcher (Cash vs Online Bank Dropdown)
+// Payment Mode Switcher
 function handlePaymentModeChange() {
   var modeSelect = document.getElementById("tx-payment-mode");
   var bankGroup = document.getElementById("bank-select-group");
@@ -35,6 +35,34 @@ function handlePaymentModeChange() {
   } else {
     bankGroup.classList.remove("hidden");
   }
+}
+
+// Dynamic Time-Based Greeting Function
+function renderUserGreeting() {
+  var name = (userProfile && userProfile.full_name) ? userProfile.full_name : "User";
+  var hour = new Date().getHours();
+  var gesture = "👋 Hello";
+  var greeting = "Welcome back, " + name + "!";
+
+  if (hour >= 4 && hour < 12) {
+    gesture = "🌅 Good Morning";
+    greeting = "Rise & Shine, " + name + "! Ready to track today's expenses?";
+  } else if (hour >= 12 && hour < 17) {
+    gesture = "☀️ Good Afternoon";
+    greeting = "Hope your day is going well, " + name + "! Here's your financial summary.";
+  } else if (hour >= 17 && hour < 22) {
+    gesture = "🌆 Good Evening";
+    greeting = "Good Evening, " + name + "! Time to review today's spending.";
+  } else {
+    gesture = "🌙 Late Night Check";
+    greeting = "Burning the midnight oil, " + name + "? Your finances are secure.";
+  }
+
+  var gestureEl = document.getElementById("greeting-gesture");
+  var headingEl = document.getElementById("user-greeting-heading");
+
+  if (gestureEl) gestureEl.innerText = gesture;
+  if (headingEl) headingEl.innerText = greeting;
 }
 
 // Session Check on Load
@@ -58,7 +86,7 @@ async function checkCurrentSession() {
   }
 }
 
-// Fetch Profile from DB using maybeSingle (406 Fix)
+// Fetch Profile from DB
 async function fetchUserProfile() {
   if (!dbClient || !currentUser) return;
 
@@ -93,7 +121,7 @@ async function fetchUserProfile() {
   }
 }
 
-// Handle Sign-Up Gallery Photo Upload & Compress
+// Handle Sign-Up Gallery Photo Upload
 function handlePhotoUpload(event) {
   var file = event.target.files[0];
   if (!file) return;
@@ -133,7 +161,7 @@ function handlePhotoUpload(event) {
   reader.readAsDataURL(file);
 }
 
-// Handle Edit Profile Gallery Photo Upload
+// Handle Edit Profile Photo Upload
 function handleEditPhotoUpload(event) {
   var file = event.target.files[0];
   if (!file) return;
@@ -173,7 +201,6 @@ function handleEditPhotoUpload(event) {
   reader.readAsDataURL(file);
 }
 
-// Edit Profile Modal Controls
 function openEditProfileModal() {
   if (!userProfile) return;
   document.getElementById("edit-fullname").value = userProfile.full_name || "";
@@ -188,7 +215,6 @@ function closeEditProfileModal() {
   document.getElementById("edit-profile-modal").classList.add("hidden");
 }
 
-// Save Profile Changes
 async function saveProfileChanges() {
   if (!currentUser || !dbClient) return;
 
@@ -225,13 +251,13 @@ async function saveProfileChanges() {
 
   document.getElementById("user-name-display").innerText = userProfile.full_name;
   document.getElementById("user-avatar-img").src = userProfile.avatar_url;
+  renderUserGreeting();
 
   setTimeout(function() {
     closeEditProfileModal();
   }, 1000);
 }
 
-// Auth Toggle
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   var title = document.getElementById("auth-title");
@@ -261,7 +287,6 @@ function toggleAuthMode() {
   }
 }
 
-// Auth Handler
 async function handleAuth() {
   var email = document.getElementById("auth-email").value.trim();
   var password = document.getElementById("auth-password").value.trim();
@@ -315,7 +340,6 @@ async function handleAuth() {
   }
 }
 
-// Forgot Password Flow
 function openForgotPasswordModal() {
   document.getElementById("auth-main-box").classList.add("hidden");
   document.getElementById("auth-forgot-box").classList.remove("hidden");
@@ -405,7 +429,6 @@ async function updateNewPassword() {
   }
 }
 
-// Logout Handler
 async function handleLogout() {
   if (dbClient) await dbClient.auth.signOut();
   currentUser = null;
@@ -420,7 +443,6 @@ async function handleLogout() {
   document.getElementById("auth-password").value = "";
 }
 
-// Launch Dashboard
 async function launchDashboard() {
   document.getElementById("auth-overlay").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
@@ -434,6 +456,8 @@ async function launchDashboard() {
     if (emailEl) emailEl.innerText = currentUser.email;
     if (avatarEl) avatarEl.src = userProfile.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=Sandy";
   }
+
+  renderUserGreeting();
 
   var todayStr = new Date().toISOString().split("T")[0];
   var dateInput = document.getElementById("tx-date");
@@ -470,7 +494,6 @@ async function loadDataFromSupabase() {
   }
 }
 
-// Add Transaction with Cash vs Bank resolution
 async function addTransaction(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -745,25 +768,14 @@ function updateSummaries(dataForTotals) {
 }
 
 function applyFilters() {
-  var searchInput = document.getElementById("searchInput");
-  var query = searchInput ? searchInput.value.toLowerCase() : "";
-  var monthFilter = document.getElementById("monthFilter");
-  var selectedMonth = monthFilter ? monthFilter.value : "";
+  var selectedMonth = document.getElementById("monthFilter").value;
 
   var filtered = transactions.filter(function (t) {
-    var matchSearch = (
-      t.category.toLowerCase().includes(query) ||
-      t.account.toLowerCase().includes(query) ||
-      (t.note && t.note.toLowerCase().includes(query)) ||
-      t.type.toLowerCase().includes(query)
-    );
-
     var matchMonth = true;
     if (selectedMonth && t.date) {
       matchMonth = t.date.startsWith(selectedMonth);
     }
-
-    return matchSearch && matchMonth;
+    return matchMonth;
   });
 
   renderTransactionTable(filtered);
@@ -775,10 +787,6 @@ function applyFilters() {
 function clearMonthFilter() {
   var m = document.getElementById("monthFilter");
   if (m) m.value = "";
-  applyFilters();
-}
-
-function filterTransactions() {
   applyFilters();
 }
 
@@ -916,7 +924,7 @@ function exportToCSV() {
   URL.revokeObjectURL(url);
 }
 
-// AI Sandy
+// AI Sandy Controls
 function openAISandyModal() {
   document.getElementById("ai-sandy-modal").classList.remove("hidden");
 }
