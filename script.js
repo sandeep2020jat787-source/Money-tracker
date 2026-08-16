@@ -44,8 +44,13 @@ async function unlockApp() {
     document.getElementById("auth-overlay").classList.add("hidden");
     document.getElementById("app-container").classList.remove("hidden");
     
+    // Set default dates to today
+    var todayStr = new Date().toISOString().split("T")[0];
     var dateInput = document.getElementById("tx-date");
-    if (dateInput) dateInput.valueAsDate = new Date();
+    if (dateInput) dateInput.value = todayStr;
+
+    var debtDateInput = document.getElementById("debt-date");
+    if (debtDateInput) debtDateInput.value = todayStr;
 
     var currentMonth = new Date().toISOString().slice(0, 7);
     var monthFilter = document.getElementById("monthFilter");
@@ -104,7 +109,7 @@ async function addTransaction(e) {
   await loadDataFromSupabase();
 }
 
-// Add Debt / Receivable
+// Add Debt / Receivable (Transaction Date)
 async function addDebt(e) {
   e.preventDefault();
   var debt = {
@@ -112,7 +117,7 @@ async function addDebt(e) {
     type: document.getElementById("debt-type").value,
     amount: parseFloat(document.getElementById("debt-amount").value),
     reason: document.getElementById("debt-reason").value.trim(),
-    due_date: document.getElementById("debt-date").value || null,
+    due_date: document.getElementById("debt-date").value || new Date().toISOString().split("T")[0],
     note: document.getElementById("debt-note").value.trim() || "",
     is_settled: false
   };
@@ -123,6 +128,8 @@ async function addDebt(e) {
   }
 
   document.getElementById("debt-form").reset();
+  var debtDateInput = document.getElementById("debt-date");
+  if (debtDateInput) debtDateInput.value = new Date().toISOString().split("T")[0];
   await loadDataFromSupabase();
 }
 
@@ -182,14 +189,13 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
-// CONSOLIDATED PERSON PDF GENERATOR (All records sum-up & minus)
+// CONSOLIDATED PERSON PDF GENERATOR (With Transaction Dates)
 function generatePersonStatementPDF(targetPersonName) {
   var personRecords = debts.filter(function(d) {
     return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase() && !d.is_settled;
   });
 
   if (personRecords.length === 0) {
-    // Agar koi active nahi hai toh settled samet pura history uthayenge
     personRecords = debts.filter(function(d) {
       return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase();
     });
@@ -216,9 +222,9 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFontSize(10);
   doc.setTextColor(50, 50, 50);
   doc.setFont("helvetica", "normal");
-  doc.text("Date Generated: " + new Date().toLocaleDateString('en-IN'), 14, 40);
+  doc.text("Statement Date: " + new Date().toLocaleDateString('en-IN'), 14, 40);
   doc.text("Statement For: " + targetPersonName, 14, 46);
-  doc.text("Total Transactions: " + personRecords.length, 14, 52);
+  doc.text("Total Records: " + personRecords.length, 14, 52);
 
   var totalLent = 0;
   var totalBorrowed = 0;
@@ -235,8 +241,8 @@ function generatePersonStatementPDF(targetPersonName) {
 
     return [
       index + 1,
-      item.reason + (item.note ? "\n(" + item.note + ")" : ""),
       item.due_date ? item.due_date : "—",
+      item.reason + (item.note ? "\n(" + item.note + ")" : ""),
       isLent ? "You Lent (+)" : "You Borrowed (-)",
       isLent ? "Rs. " + amt.toLocaleString('en-IN') : "-",
       !isLent ? "Rs. " + amt.toLocaleString('en-IN') : "-"
@@ -246,17 +252,17 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.autoTable({
     startY: 58,
     theme: 'grid',
-    head: [['#', 'Purpose / Note', 'Due Date', 'Type', 'Lent (Dr)', 'Borrowed (Cr)']],
+    head: [['#', 'Txn Date', 'Purpose / Note', 'Type', 'Lent (Dr)', 'Borrowed (Cr)']],
     body: tableBody,
     headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
     styles: { fontSize: 10, cellPadding: 5 },
     columnStyles: {
       0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 60 },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 35 },
-      4: { cellWidth: 30, halign: 'right' },
-      5: { cellWidth: 30, halign: 'right' }
+      1: { cellWidth: 26 },
+      2: { cellWidth: 60 },
+      3: { cellWidth: 32 },
+      4: { cellWidth: 28, halign: 'right' },
+      5: { cellWidth: 28, halign: 'right' }
     }
   });
 
@@ -285,16 +291,15 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFont("helvetica", "bold");
   
   if (netBalance >= 0) {
-    doc.setTextColor(22, 163, 74); // Green
+    doc.setTextColor(22, 163, 74);
     doc.text("FINAL NET RECEIVABLE (To Receive):", 20, finalY + 29);
     doc.text("Rs. " + netBalance.toLocaleString('en-IN'), 185, finalY + 29, { align: 'right' });
   } else {
-    doc.setTextColor(220, 38, 38); // Red
+    doc.setTextColor(220, 38, 38);
     doc.text("FINAL NET PAYABLE (To Return):", 20, finalY + 29);
     doc.text("Rs. " + Math.abs(netBalance).toLocaleString('en-IN'), 185, finalY + 29, { align: 'right' });
   }
 
-  // Footer Note
   doc.setFontSize(9);
   doc.setTextColor(140, 140, 140);
   doc.setFont("helvetica", "italic");
@@ -431,16 +436,15 @@ function renderDebtTable() {
           ? '<span class="badge-give">Receivable 🟢</span>' 
           : '<span class="badge-take">Payable 🔴</span>');
 
-    // Escaped string for name parameter
     var cleanPersonParam = encodeURIComponent(d.person_name);
 
     var row = document.createElement("tr");
     row.innerHTML =
+      "<td>" + (d.due_date || "—") + "</td>" +
       "<td><strong>" + d.person_name + "</strong><br><small>" + (d.note || "") + "</small></td>" +
       "<td>" + typeBadge + "</td>" +
       "<td>" + d.reason + "</td>" +
       "<td>₹" + parseFloat(d.amount).toLocaleString() + "</td>" +
-      "<td>" + (d.due_date || "—") + "</td>" +
       '<td>' +
         '<button class="btn-pdf" onclick="generatePersonStatementPDF(decodeURIComponent(\'' + cleanPersonParam + '\'))">📄 PDF</button>' +
         '<button class="btn-settle" onclick="toggleSettleDebt(' + d.id + ', ' + d.is_settled + ')">' + (d.is_settled ? 'Reopen' : '✓ Settle') + '</button>' +

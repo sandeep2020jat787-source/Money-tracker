@@ -6,10 +6,11 @@
   <title>Personal Finance Tracker</title>
   
   <!-- Supabase CDN Client -->
-   <!-- jsPDF & autoTable CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- jsPDF & autoTable CDN for PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
   <link rel="stylesheet" href="style.css">
 </head>
@@ -132,6 +133,9 @@
         <div class="box">
           <h2>Add Dues & Receivables</h2>
           <form id="debt-form" onsubmit="addDebt(event)">
+            <label>Transaction Date (Given / Taken Date)</label>
+            <input type="date" id="debt-date" required>
+
             <label>Person / Entity Name</label>
             <input type="text" id="debt-person" placeholder="Friend or Client Name" required>
 
@@ -146,9 +150,6 @@
 
             <label>Category / Purpose</label>
             <input type="text" id="debt-reason" placeholder="Fuel, Trip, Rent, Dinner..." required>
-
-            <label>Due / Expected Date (Optional)</label>
-            <input type="date" id="debt-date">
 
             <label>Remarks / Note</label>
             <input type="text" id="debt-note" placeholder="UPI reference or details...">
@@ -212,11 +213,11 @@
             <table id="debt-table">
               <thead>
                 <tr>
+                  <th>Date</th>
                   <th>Person</th>
                   <th>Type</th>
                   <th>Purpose</th>
                   <th>Amount</th>
-                  <th>Due Date</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -263,6 +264,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>
