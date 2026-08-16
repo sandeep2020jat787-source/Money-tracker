@@ -185,3 +185,76 @@ th { background-color: #f8fafc; }
     width: 100%;
   }
 }
+/* Controls, Export and Settings Bar */
+.controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  background: #fff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.filter-group, .action-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.controls-bar input[type="month"] {
+  padding: 7px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.btn-export {
+  background: #059669;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+  margin-top: 0;
+}
+
+.btn-settings {
+  background: #4b5563;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+  margin-top: 0;
+}
+
+.btn-clear {
+  background: #e5e7eb;
+  color: #374151;
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+  margin-top: 0;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.modal-buttons button {
+  flex: 1;
+}
+
+.error-msg {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 8px;
+}

@@ -210,3 +210,145 @@ function renderAll() {
   renderTransactionTable();
   renderLoanTable();
 }
+// Dynamic PIN Handling (Default 1234 agar pehle set na kiya ho)
+function getSavedPIN() {
+  return localStorage.getItem("tracker_custom_pin") || "1234";
+}
+
+// Unlock Action using Dynamic PIN
+async function unlockApp() {
+  var pinInput = document.getElementById("pin-input");
+  var enteredPin = pinInput ? pinInput.value.trim() : "";
+  var errorMsg = document.getElementById("pin-error");
+
+  if (enteredPin === getSavedPIN()) {
+    if (errorMsg) errorMsg.innerText = "";
+    document.getElementById("auth-overlay").classList.add("hidden");
+    document.getElementById("app-container").classList.remove("hidden");
+    
+    var dateInput = document.getElementById("tx-date");
+    if (dateInput) dateInput.valueAsDate = new Date();
+
+    // Default current month filter set karein
+    var currentMonth = new Date().toISOString().slice(0, 7);
+    var monthFilter = document.getElementById("monthFilter");
+    if (monthFilter) monthFilter.value = currentMonth;
+
+    await loadDataFromSupabase();
+  } else {
+    if (errorMsg) errorMsg.innerText = "Invalid PIN. Try again.";
+  }
+}
+
+// PIN Modal Open / Close / Save
+function openPinModal() {
+  document.getElementById("pin-modal").classList.remove("hidden");
+}
+
+function closePinModal() {
+  document.getElementById("pin-modal").classList.add("hidden");
+  document.getElementById("current-pin").value = "";
+  document.getElementById("new-pin").value = "";
+  document.getElementById("pin-modal-msg").innerText = "";
+}
+
+function saveNewPin() {
+  var curr = document.getElementById("current-pin").value.trim();
+  var newP = document.getElementById("new-pin").value.trim();
+  var msg = document.getElementById("pin-modal-msg");
+
+  if (curr !== getSavedPIN()) {
+    msg.style.color = "#dc2626";
+    msg.innerText = "Current PIN is incorrect.";
+    return;
+  }
+
+  if (newP.length < 4) {
+    msg.style.color = "#dc2626";
+    msg.innerText = "New PIN must be at least 4 digits.";
+    return;
+  }
+
+  localStorage.setItem("tracker_custom_pin", newP);
+  msg.style.color = "#16a34a";
+  msg.innerText = "PIN updated successfully!";
+  setTimeout(closePinModal, 1200);
+}
+
+// Monthly Filter & Search Combined Logic
+function applyFilters() {
+  var query = document.getElementById("searchInput").value.toLowerCase();
+  var selectedMonth = document.getElementById("monthFilter").value; // Format: YYYY-MM
+
+  var filtered = transactions.filter(function (t) {
+    var matchSearch = (
+      t.category.toLowerCase().includes(query) ||
+      t.account.toLowerCase().includes(query) ||
+      (t.note && t.note.toLowerCase().includes(query)) ||
+      t.type.toLowerCase().includes(query)
+    );
+
+    var matchMonth = true;
+    if (selectedMonth && t.date) {
+      matchMonth = t.date.startsWith(selectedMonth);
+    }
+
+    return matchSearch && matchMonth;
+  });
+
+  renderTransactionTable(filtered);
+  updateSummaries(filtered);
+}
+
+function clearMonthFilter() {
+  document.getElementById("monthFilter").value = "";
+  applyFilters();
+}
+
+// Replace Search with Filter Link
+function filterTransactions() {
+  applyFilters();
+}
+
+// CSV/Excel Export Function
+function exportToCSV() {
+  var selectedMonth = document.getElementById("monthFilter").value;
+  
+  var dataToExport = transactions;
+  if (selectedMonth) {
+    dataToExport = transactions.filter(function(t) {
+      return t.date && t.date.startsWith(selectedMonth);
+    });
+  }
+
+  if (dataToExport.length === 0) {
+    alert("No records found to export!");
+    return;
+  }
+
+  var csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "ID,Date,Category,Type,Amount (INR),Account,Note\n";
+
+  dataToExport.forEach(function (t) {
+    var cleanNote = (t.note || "").replace(/,/g, " "); // Commas hata kar clean row banayein
+    var row = [
+      t.id,
+      t.date,
+      t.category,
+      t.type,
+      t.amount,
+      t.account,
+      cleanNote
+    ].join(",");
+    csvContent += row + "\n";
+  });
+
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  var fileName = selectedMonth ? "Expenses_" + selectedMonth + ".csv" : "All_Expenses.csv";
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
