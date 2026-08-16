@@ -333,7 +333,7 @@
           </form>
         </div>
 
-        <!-- Dues & Receivables Form -->
+        <!-- Dues & Receivables Form with WhatsApp Number & Auto Alert Option -->
         <div class="glass-box">
           <div class="box-head">
             <h3>🤝 Dues & Receivables (Khata)</h3>
@@ -347,11 +347,15 @@
               </div>
               <div class="input-group">
                 <label>Person / Entity Name</label>
-                <input type="text" id="debt-person" placeholder="Friend or Client" required>
+                <input type="text" id="debt-person" placeholder="Friend or Client Name" required>
               </div>
             </div>
 
             <div class="grid-2">
+              <div class="input-group">
+                <label>WhatsApp Number (Optional)</label>
+                <input type="tel" id="debt-phone" placeholder="9876543210 (For Auto-Receipt)">
+              </div>
               <div class="input-group">
                 <label>Type</label>
                 <select id="debt-type" required>
@@ -359,23 +363,25 @@
                   <option value="take">Borrowed / Taken (Payable 🔴)</option>
                 </select>
               </div>
+            </div>
+
+            <div class="grid-2">
               <div class="input-group">
                 <label>Amount (₹)</label>
                 <input type="number" id="debt-amount" placeholder="2000" required>
               </div>
-            </div>
-
-            <div class="input-group">
-              <label>Purpose / Reason</label>
-              <input type="text" id="debt-reason" placeholder="Fuel, Travel, Rent, Dinner..." required>
+              <div class="input-group">
+                <label>Purpose / Reason</label>
+                <input type="text" id="debt-reason" placeholder="Fuel, Travel, Rent, Dinner..." required>
+              </div>
             </div>
 
             <div class="input-group">
               <label>Remarks / Note</label>
-              <input type="text" id="debt-note" placeholder="UPI transaction ID or context...">
+              <input type="text" id="debt-note" placeholder="UPI reference or details...">
             </div>
 
-            <button type="submit" class="btn-glow-indigo w-100">Save Ledger Record</button>
+            <button type="submit" class="btn-glow-indigo w-100">Save & Notify on WhatsApp 📲</button>
           </form>
         </div>
 
@@ -455,7 +461,7 @@
                   <th>Type</th>
                   <th>Purpose</th>
                   <th>Amount</th>
-                  <th>Action / PDF</th>
+                  <th>WhatsApp / PDF</th>
                 </tr>
               </thead>
               <tbody id="debt-list"></tbody>
@@ -529,14 +535,14 @@
       <div class="ai-chat-body" id="ai-chat-body">
         <div class="ai-message bot">
           <strong>AI Sandy:</strong>
-          <p>Namaste! I'm <strong>AI Sandy</strong>, your personal AI assistant. How can I help you manage your finances, bank sources, PDF receipts, or solve questions about this app?</p>
+          <p>Namaste! I'm <strong>AI Sandy</strong>, your personal AI assistant. How can I help you manage your finances, send WhatsApp ledger receipts, or solve questions about this app?</p>
         </div>
       </div>
 
       <div class="ai-quick-chips">
-        <button onclick="sendQuickPrompt('How do I choose between Cash and my Bank Account for payments?')">💳 Cash vs Bank Guide</button>
+        <button onclick="sendQuickPrompt('How does sending WhatsApp receipts for lent money work?')">📲 WhatsApp Ledger Guide</button>
+        <button onclick="sendQuickPrompt('How do I choose between Cash and Bank accounts?')">💳 Cash vs Bank Guide</button>
         <button onclick="sendQuickPrompt('How do I generate a PDF statement for my friend?')">📄 PDF Statement Help</button>
-        <button onclick="sendQuickPrompt('How does the Dues & Receivables (Khata) work?')">🤝 Explain Khata Ledger</button>
         <button onclick="sendQuickPrompt('How to export monthly expense report to Excel?')">📥 Excel Export Guide</button>
       </div>
 
@@ -547,6 +553,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=14"></script>
+  <script src="script.js?v=15"></script>
 </body>
 </html>

@@ -37,7 +37,7 @@ function handlePaymentModeChange() {
   }
 }
 
-// Helper to Get Clean Display Name
+// Clean Display Name
 function getDisplayName() {
   if (userProfile && userProfile.full_name && userProfile.full_name.trim() !== "") {
     return userProfile.full_name.trim();
@@ -49,7 +49,7 @@ function getDisplayName() {
   return "User";
 }
 
-// Dynamic Time-Based Greeting Function using Profile Name
+// Dynamic Greeting Gesture
 function renderUserGreeting() {
   var name = getDisplayName();
   var hour = new Date().getHours();
@@ -75,6 +75,44 @@ function renderUserGreeting() {
 
   if (gestureEl) gestureEl.innerText = gesture;
   if (headingEl) headingEl.innerText = greeting;
+}
+
+// WhatsApp Dispatcher Function
+function sendWhatsAppReceipt(debtObj) {
+  if (!debtObj || !debtObj.phone) return;
+
+  // Clean phone number format (Add 91 if 10 digit Indian number)
+  var cleanPhone = debtObj.phone.replace(/[^0-9]/g, "");
+  if (cleanPhone.length === 10) {
+    cleanPhone = "91" + cleanPhone;
+  }
+
+  var senderName = getDisplayName();
+  var isLent = debtObj.type === "give";
+  var typeText = isLent 
+    ? "💸 *Cash Given / Lent (Receivable)*" 
+    : "🤝 *Cash Taken / Borrowed (Payable)*";
+
+  var message = 
+    "🧾 *APEX FINANCE | OFFICIAL TRANSACTION RECORD*\n" +
+    "───────────────────────────\n" +
+    "👤 *To:* " + debtObj.person_name + "\n" +
+    "📅 *Date:* " + (debtObj.due_date || new Date().toISOString().split("T")[0]) + "\n" +
+    "💰 *Amount:* ₹" + parseFloat(debtObj.amount).toLocaleString('en-IN') + "\n" +
+    "🏷️ *Purpose:* " + debtObj.reason + "\n" +
+    "📌 *Category:* " + typeText + "\n";
+
+  if (debtObj.note) {
+    message += "📝 *Remarks:* " + debtObj.note + "\n";
+  }
+
+  message += 
+    "───────────────────────────\n" +
+    "⚡ *Recorded By:* " + senderName + "\n" +
+    "_This record is digitally logged in Apex Finance._";
+
+  var waUrl = "https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(message);
+  window.open(waUrl, "_blank");
 }
 
 // Session Check on Load
@@ -229,7 +267,6 @@ function closeEditProfileModal() {
   document.getElementById("edit-profile-modal").classList.add("hidden");
 }
 
-// Save Profile Name & Details
 async function saveProfileChanges() {
   if (!currentUser || !dbClient) return;
 
@@ -239,7 +276,7 @@ async function saveProfileChanges() {
 
   if (!newName) {
     msg.style.color = "#f87171";
-    msg.innerText = "Profile Name / Username cannot be empty.";
+    msg.innerText = "Profile Name cannot be empty.";
     return;
   }
 
@@ -264,7 +301,6 @@ async function saveProfileChanges() {
   msg.style.color = "#4ade80";
   msg.innerText = "Profile updated successfully!";
 
-  // Update Header and Greeting in real-time
   document.getElementById("user-name-display").innerText = userProfile.full_name;
   document.getElementById("user-avatar-img").src = userProfile.avatar_url;
   renderUserGreeting();
@@ -470,7 +506,6 @@ async function launchDashboard() {
   document.getElementById("auth-overlay").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
 
-  // Profile display name
   var nameEl = document.getElementById("user-name-display");
   var emailEl = document.getElementById("user-email-display");
   var avatarEl = document.getElementById("user-avatar-img");
@@ -547,13 +582,17 @@ async function addTransaction(e) {
   await loadDataFromSupabase();
 }
 
+// Add Debt / Khata Entry with Auto WhatsApp Alert
 async function addDebt(e) {
   e.preventDefault();
   if (!currentUser) return;
 
+  var phoneVal = document.getElementById("debt-phone").value.trim();
+
   var debt = {
     user_id: currentUser.id,
     person_name: document.getElementById("debt-person").value.trim(),
+    phone: phoneVal || null,
     type: document.getElementById("debt-type").value,
     amount: parseFloat(document.getElementById("debt-amount").value),
     reason: document.getElementById("debt-reason").value.trim(),
@@ -565,6 +604,11 @@ async function addDebt(e) {
   if (dbClient) {
     var res = await dbClient.from("debts").insert([debt]);
     if (res.error) alert("Save Error: " + res.error.message);
+  }
+
+  // If phone number entered, auto-dispatch formatted WhatsApp statement
+  if (phoneVal) {
+    sendWhatsAppReceipt(debt);
   }
 
   document.getElementById("debt-form").reset();
@@ -630,6 +674,7 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
+// Consolidated PDF Statement
 function generatePersonStatementPDF(targetPersonName) {
   var personRecords = debts.filter(function(d) {
     return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase() && !d.is_settled;
@@ -833,6 +878,7 @@ function renderTransactionTable(dataToRender) {
   });
 }
 
+// Render Dues & Receivables with WhatsApp Button
 function renderDebtTable() {
   var debtList = document.getElementById("debt-list");
   var badge = document.getElementById("debt-count-badge");
@@ -858,15 +904,21 @@ function renderDebtTable() {
           : '<span class="badge-take">Payable 🔴</span>');
 
     var cleanPersonParam = encodeURIComponent(d.person_name);
+    var debtDataJson = encodeURIComponent(JSON.stringify(d));
+
+    var waButton = d.phone 
+      ? '<button class="btn-wa" onclick="sendWhatsAppReceipt(JSON.parse(decodeURIComponent(\'' + debtDataJson + '\')))" title="Send on WhatsApp">📲 WA</button>'
+      : '';
 
     var row = document.createElement("tr");
     row.innerHTML =
       "<td>" + (d.due_date || "—") + "</td>" +
-      "<td><strong>" + d.person_name + "</strong><br><small style='color:#94a3b8;'>" + (d.note || "") + "</small></td>" +
+      "<td><strong>" + d.person_name + "</strong>" + (d.phone ? "<br><small style='color:#38bdf8;'>📞 " + d.phone + "</small>" : "") + "<br><small style='color:#94a3b8;'>" + (d.note || "") + "</small></td>" +
       "<td>" + typeBadge + "</td>" +
       "<td>" + d.reason + "</td>" +
       "<td>₹" + parseFloat(d.amount).toLocaleString() + "</td>" +
       '<td>' +
+        waButton +
         '<button class="btn-pdf" onclick="generatePersonStatementPDF(decodeURIComponent(\'' + cleanPersonParam + '\'))">📄 PDF</button>' +
         '<button class="btn-settle" onclick="toggleSettleDebt(' + d.id + ', ' + d.is_settled + ')">' + (d.is_settled ? 'Reopen' : '✓ Settle') + '</button>' +
         '<button class="btn-del" onclick="deleteDebt(' + d.id + ')">Del</button>' +
@@ -991,12 +1043,16 @@ function sendQueryToAISandy() {
 function generateAISandyResponse(q) {
   var lower = q.toLowerCase();
 
+  if (lower.includes("whatsapp") || lower.includes("phone") || lower.includes("receipt") || lower.includes("notify")) {
+    return "When adding a Dues/Khata record, simply enter the person's 10-digit mobile number. As soon as you hit Save, WhatsApp will automatically pop up with a formatted receipt ready to send with one click!";
+  }
+
   if (lower.includes("cash") || lower.includes("bank") || lower.includes("source") || lower.includes("online")) {
     return "When adding a transaction, select <strong>Cash / Physical Wallet</strong> for cash transactions or <strong>Online / Net Banking / UPI</strong> to select from India's major public, private, and payment banks!";
   }
 
   if (lower.includes("pdf") || lower.includes("statement") || lower.includes("share")) {
-    return "To generate a PDF statement for anyone: Go to <strong>Dues & Receivables (Ledger)</strong> on the right side. Click the <strong>📄 PDF</strong> button to download an official itemized PDF statement.";
+    return "To generate a consolidated PDF statement for anyone: Go to <strong>Dues & Receivables (Ledger)</strong> on the right side. Click the <strong>📄 PDF</strong> button to download an official itemized PDF statement.";
   }
 
   if (lower.includes("khata") || lower.includes("due") || lower.includes("receivable") || lower.includes("lent") || lower.includes("borrow")) {
@@ -1007,13 +1063,9 @@ function generateAISandyResponse(q) {
     return "Click the green <strong>📥 Export Excel (CSV)</strong> button at the top right toolbar to download your lifetime or monthly records.";
   }
 
-  if (lower.includes("profile") || lower.includes("edit") || lower.includes("name") || lower.includes("username")) {
-    return "You can customize your Profile Name / Username, date of birth, or profile gallery photo anytime by clicking the gear icon (⚙️) next to the logout button in the top navigation bar.";
-  }
-
   if (lower.includes("creator") || lower.includes("who made") || lower.includes("sandeep") || lower.includes("developer")) {
     return "Apex Finance is proudly designed and built by <strong>Sandeep Choudhary</strong>, an Automotive Tech & Software Engineer!";
   }
 
-  return "I'm always here to assist you with Apex Finance! Ask me about cash vs bank sources, borrower PDF statements, loans, or profile updates.";
+  return "I'm always here to assist you with Apex Finance! Ask me about WhatsApp receipts, cash vs bank sources, borrower PDF statements, or loans.";
 }
