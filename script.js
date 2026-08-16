@@ -45,19 +45,38 @@ async function checkCurrentSession() {
   }
 }
 
-// Fetch Profile from DB (Prioritizes Database Profile over default metadata)
+// Fetch Profile from DB (Fixed 406 Error using maybeSingle)
 async function fetchUserProfile() {
   if (!dbClient || !currentUser) return;
 
-  var { data } = await dbClient.from("profiles").select("*").eq("id", currentUser.id).single();
-  if (data) {
-    userProfile = data;
-  } else {
-    var meta = currentUser.user_metadata || {};
+  try {
+    var { data, error } = await dbClient
+      .from("profiles")
+      .select("*")
+      .eq("id", currentUser.id)
+      .maybeSingle();
+
+    if (data) {
+      userProfile = data;
+    } else {
+      var meta = currentUser.user_metadata || {};
+      userProfile = {
+        id: currentUser.id,
+        full_name: meta.full_name || currentUser.email.split("@")[0],
+        dob: meta.dob || "",
+        avatar_url: meta.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + encodeURIComponent(currentUser.email)
+      };
+
+      // Auto-create initial profile row if missing
+      await dbClient.from("profiles").upsert(userProfile);
+    }
+  } catch (err) {
+    console.error("Profile Fetch Notice:", err);
     userProfile = {
-      full_name: meta.full_name || currentUser.email.split("@")[0],
-      dob: meta.dob || "",
-      avatar_url: meta.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + currentUser.email
+      id: currentUser.id,
+      full_name: currentUser.email.split("@")[0],
+      dob: "",
+      avatar_url: "https://api.dicebear.com/7.x/bottts/svg?seed=" + encodeURIComponent(currentUser.email)
     };
   }
 }
@@ -157,7 +176,7 @@ function closeEditProfileModal() {
   document.getElementById("edit-profile-modal").classList.add("hidden");
 }
 
-// Save Profile Changes to Database
+// Save Profile Changes
 async function saveProfileChanges() {
   if (!currentUser || !dbClient) return;
 
@@ -192,7 +211,6 @@ async function saveProfileChanges() {
   msg.style.color = "#4ade80";
   msg.innerText = "Profile updated successfully!";
 
-  // Update Navbar UI immediately
   document.getElementById("user-name-display").innerText = userProfile.full_name;
   document.getElementById("user-avatar-img").src = userProfile.avatar_url;
 
@@ -521,8 +539,8 @@ async function toggleSettleDebt(id, currentStatus) {
 async function deleteTransaction(id) {
   if (dbClient) {
     await dbClient.from("transactions").delete().eq("id", id);
-    await loadDataFromSupabase();
   }
+  await loadDataFromSupabase();
 }
 
 async function deleteDebt(id) {
@@ -537,8 +555,8 @@ async function deleteDebt(id) {
 async function deleteLoan(id) {
   if (dbClient) {
     await dbClient.from("loans").delete().eq("id", id);
-    await loadDataFromSupabase();
   }
+  await loadDataFromSupabase();
 }
 
 function toggleSettledView() {
