@@ -324,6 +324,7 @@ input:focus, select:focus {
   background: linear-gradient(135deg, #60a5fa, #c084fc, #38bdf8);
   background-size: 200% auto;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 16px rgba(96, 165, 250, 0.65), 0 0 30px rgba(192, 132, 252, 0.45);
   animation: shimmerGlow 3s ease infinite;
@@ -360,6 +361,7 @@ input:focus, select:focus {
   letter-spacing: 2px;
   background: linear-gradient(135deg, #60a5fa, #a855f7);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
