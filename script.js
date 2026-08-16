@@ -182,55 +182,125 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
-// PDF Generation for Individual Record
-function generatePersonStatementPDF(debtId) {
-  var item = debts.find(function(d) { return d.id === debtId; });
-  if (!item) return;
+// CONSOLIDATED PERSON PDF GENERATOR (All records sum-up & minus)
+function generatePersonStatementPDF(targetPersonName) {
+  var personRecords = debts.filter(function(d) {
+    return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase() && !d.is_settled;
+  });
+
+  if (personRecords.length === 0) {
+    // Agar koi active nahi hai toh settled samet pura history uthayenge
+    personRecords = debts.filter(function(d) {
+      return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase();
+    });
+  }
+
+  if (personRecords.length === 0) {
+    alert("No records found for " + targetPersonName);
+    return;
+  }
 
   var { jsPDF } = window.jspdf;
   var doc = new jsPDF();
 
+  // Header Banner
   doc.setFillColor(37, 99, 235);
-  doc.rect(0, 0, 210, 28, 'F');
+  doc.rect(0, 0, 210, 30, 'F');
   
   doc.setFontSize(18);
   doc.setTextColor(255, 255, 255);
-  doc.text("PAYMENT STATEMENT & RECEIPT", 14, 18);
+  doc.setFont("helvetica", "bold");
+  doc.text("STATEMENT OF ACCOUNT", 14, 18);
 
+  // Meta Info
   doc.setFontSize(10);
   doc.setTextColor(50, 50, 50);
-  doc.text("Generated On: " + new Date().toLocaleDateString('en-IN'), 14, 38);
-  doc.text("Statement For: " + item.person_name, 14, 44);
-  doc.text("Status: " + (item.is_settled ? "SETTLED / PAID" : "PENDING DUES"), 14, 50);
+  doc.setFont("helvetica", "normal");
+  doc.text("Date Generated: " + new Date().toLocaleDateString('en-IN'), 14, 40);
+  doc.text("Statement For: " + targetPersonName, 14, 46);
+  doc.text("Total Transactions: " + personRecords.length, 14, 52);
 
-  var tableData = [
-    ["Type / Relationship", item.type === "give" ? "Receivable (Lent / Given)" : "Payable (Borrowed)"],
-    ["Total Amount", "Rs. " + parseFloat(item.amount).toLocaleString('en-IN')],
-    ["Purpose / Category", item.reason],
-    ["Expected Due Date", item.due_date ? item.due_date : "Not Specified"],
-    ["Remarks / Note", item.note ? item.note : "None"],
-    ["Payment Status", item.is_settled ? "Cleared" : "Unsettled / Active"]
-  ];
+  var totalLent = 0;
+  var totalBorrowed = 0;
+
+  var tableBody = personRecords.map(function(item, index) {
+    var amt = parseFloat(item.amount) || 0;
+    var isLent = (item.type === "give");
+
+    if (isLent) {
+      totalLent += amt;
+    } else {
+      totalBorrowed += amt;
+    }
+
+    return [
+      index + 1,
+      item.reason + (item.note ? "\n(" + item.note + ")" : ""),
+      item.due_date ? item.due_date : "—",
+      isLent ? "You Lent (+)" : "You Borrowed (-)",
+      isLent ? "Rs. " + amt.toLocaleString('en-IN') : "-",
+      !isLent ? "Rs. " + amt.toLocaleString('en-IN') : "-"
+    ];
+  });
 
   doc.autoTable({
-    startY: 56,
+    startY: 58,
     theme: 'grid',
-    head: [['Particulars', 'Details']],
-    body: tableData,
+    head: [['#', 'Purpose / Note', 'Due Date', 'Type', 'Lent (Dr)', 'Borrowed (Cr)']],
+    body: tableBody,
     headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
-    styles: { fontSize: 11, cellPadding: 6 },
+    styles: { fontSize: 10, cellPadding: 5 },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 70 },
-      1: { cellWidth: 110 }
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 60 },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 35 },
+      4: { cellWidth: 30, halign: 'right' },
+      5: { cellWidth: 30, halign: 'right' }
     }
   });
 
-  var finalY = doc.lastAutoTable.finalY + 15;
-  doc.setFontSize(10);
-  doc.setTextColor(120, 120, 120);
-  doc.text("This is an electronically generated statement of record.", 14, finalY);
+  var netBalance = totalLent - totalBorrowed;
+  var finalY = doc.lastAutoTable.finalY + 10;
 
-  var safeName = item.person_name.replace(/[^a-zA-Z0-9]/g, "_");
+  // Summary Box inside PDF
+  doc.setFillColor(245, 247, 250);
+  doc.rect(14, finalY, 182, 36, 'F');
+  doc.setDrawColor(209, 213, 219);
+  doc.rect(14, finalY, 182, 36, 'S');
+
+  doc.setFontSize(10);
+  doc.setTextColor(55, 65, 81);
+  doc.setFont("helvetica", "normal");
+  doc.text("Total Amount Lent (Aapne Diye):", 20, finalY + 8);
+  doc.text("Rs. " + totalLent.toLocaleString('en-IN'), 185, finalY + 8, { align: 'right' });
+
+  doc.text("Total Amount Borrowed (Aapne Liye):", 20, finalY + 16);
+  doc.text("Rs. " + totalBorrowed.toLocaleString('en-IN'), 185, finalY + 16, { align: 'right' });
+
+  doc.setLineWidth(0.3);
+  doc.line(20, finalY + 20, 190, finalY + 20);
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  
+  if (netBalance >= 0) {
+    doc.setTextColor(22, 163, 74); // Green
+    doc.text("FINAL NET RECEIVABLE (To Receive):", 20, finalY + 29);
+    doc.text("Rs. " + netBalance.toLocaleString('en-IN'), 185, finalY + 29, { align: 'right' });
+  } else {
+    doc.setTextColor(220, 38, 38); // Red
+    doc.text("FINAL NET PAYABLE (To Return):", 20, finalY + 29);
+    doc.text("Rs. " + Math.abs(netBalance).toLocaleString('en-IN'), 185, finalY + 29, { align: 'right' });
+  }
+
+  // Footer Note
+  doc.setFontSize(9);
+  doc.setTextColor(140, 140, 140);
+  doc.setFont("helvetica", "italic");
+  doc.text("This is an electronically generated statement of dues and receivables.", 14, finalY + 45);
+
+  var safeName = targetPersonName.replace(/[^a-zA-Z0-9]/g, "_");
   doc.save("Statement_" + safeName + ".pdf");
 }
 
@@ -361,6 +431,9 @@ function renderDebtTable() {
           ? '<span class="badge-give">Receivable 🟢</span>' 
           : '<span class="badge-take">Payable 🔴</span>');
 
+    // Escaped string for name parameter
+    var cleanPersonParam = encodeURIComponent(d.person_name);
+
     var row = document.createElement("tr");
     row.innerHTML =
       "<td><strong>" + d.person_name + "</strong><br><small>" + (d.note || "") + "</small></td>" +
@@ -369,7 +442,7 @@ function renderDebtTable() {
       "<td>₹" + parseFloat(d.amount).toLocaleString() + "</td>" +
       "<td>" + (d.due_date || "—") + "</td>" +
       '<td>' +
-        '<button class="btn-pdf" onclick="generatePersonStatementPDF(' + d.id + ')">📄 PDF</button>' +
+        '<button class="btn-pdf" onclick="generatePersonStatementPDF(decodeURIComponent(\'' + cleanPersonParam + '\'))">📄 PDF</button>' +
         '<button class="btn-settle" onclick="toggleSettleDebt(' + d.id + ', ' + d.is_settled + ')">' + (d.is_settled ? 'Reopen' : '✓ Settle') + '</button>' +
         '<button class="btn-del" onclick="deleteDebt(' + d.id + ')">Del</button>' +
       '</td>';
@@ -447,7 +520,7 @@ function exportToCSV() {
   URL.revokeObjectURL(url);
 }
 
-// Security & Password Handlers
+// Security Handlers
 function openForgotModal() {
   document.getElementById("forgot-modal").classList.remove("hidden");
 }
