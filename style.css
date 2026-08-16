@@ -43,7 +43,6 @@ body {
   display: none !important;
 }
 
-/* Auth Overlay & Card */
 .overlay {
   position: fixed;
   inset: 0;
@@ -228,7 +227,6 @@ input:focus, select:focus {
   font-weight: 400 !important;
 }
 
-/* Creator Tag in Auth Card */
 .creator-tag-card {
   margin-top: 25px;
   padding-top: 15px;
@@ -281,7 +279,6 @@ input:focus, select:focus {
   text-align: left;
 }
 
-/* Navbar */
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -356,12 +353,6 @@ input:focus, select:focus {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-ai-sandy-nav:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.35));
-  transform: translateY(-1px);
 }
 
 .ai-pulse {
@@ -419,17 +410,23 @@ input:focus, select:focus {
   white-space: nowrap;
 }
 
+.btn-icon-edit {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+}
+
 .btn-icon-logout {
   background: transparent;
   border: none;
   color: #ef4444;
   font-size: 14px;
   cursor: pointer;
-  margin-left: 5px;
   padding: 4px;
 }
 
-/* Toolbar */
 .toolbar-card {
   display: flex;
   justify-content: space-between;
@@ -475,7 +472,6 @@ input:focus, select:focus {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-/* Metrics Cards */
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -488,14 +484,6 @@ input:focus, select:focus {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.metric-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .metric-header {
@@ -525,7 +513,6 @@ input:focus, select:focus {
   color: var(--text-muted);
 }
 
-/* Workspace Grid */
 .workspace-grid {
   display: grid;
   grid-template-columns: 1fr 1.8fr;
@@ -538,7 +525,6 @@ input:focus, select:focus {
   border-radius: 18px;
   padding: 22px;
   margin-bottom: 25px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .box-head {
@@ -576,7 +562,6 @@ input:focus, select:focus {
   color: var(--text-muted);
 }
 
-/* Tables */
 .table-container {
   overflow-x: auto;
 }
@@ -598,7 +583,6 @@ th {
   color: var(--text-muted);
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .badge-expense { color: #f87171; font-weight: 700; }
@@ -674,7 +658,6 @@ th {
   cursor: pointer;
 }
 
-/* Footer with Developer Showcase */
 .app-footer {
   margin-top: 40px;
   padding: 25px 30px;
@@ -742,7 +725,6 @@ th {
   color: #94a3b8;
 }
 
-/* Floating AI Sandy Button */
 .btn-floating-ai-sandy {
   position: fixed;
   bottom: 30px;
@@ -758,11 +740,6 @@ th {
   cursor: pointer;
   box-shadow: 0 10px 25px rgba(168, 85, 247, 0.5);
   z-index: 999;
-  transition: transform 0.2s;
-}
-
-.btn-floating-ai-sandy:hover {
-  transform: scale(1.05);
 }
 
 .ai-avatar-pulse {
@@ -781,19 +758,16 @@ th {
   font-size: 13px;
 }
 
-/* AI Sandy Chat Card Modal */
 .ai-chat-card {
   background: var(--bg-surface);
   border: 1px solid rgba(168, 85, 247, 0.4);
   border-radius: 20px;
   width: 100%;
   max-width: 520px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(168, 85, 247, 0.25);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
   height: 600px;
-  animation: modalFadeIn 0.3s ease;
-  overflow: hidden;
 }
 
 .ai-card-header {
@@ -926,7 +900,6 @@ th {
   margin-top: 8px;
 }
 
-/* Responsive */
 @media (max-width: 992px) {
   .workspace-grid { grid-template-columns: 1fr; }
   .navbar { flex-direction: column; gap: 15px; align-items: flex-start; }

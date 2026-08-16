@@ -5,15 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Apex Finance | Smart Money & Ledger Tracker</title>
   
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Supabase CDN Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
-  <!-- jsPDF & autoTable CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
@@ -23,7 +19,6 @@
 
   <!-- Auth Screen (Login / Sign Up / Forgot Password) -->
   <div id="auth-overlay" class="overlay">
-    <!-- Main Auth Card -->
     <div class="auth-card" id="auth-main-box">
       <div class="brand-badge">APEX FINANCE</div>
       <h2 id="auth-title">Welcome Back</h2>
@@ -39,8 +34,6 @@
           <label>Date of Birth</label>
           <input type="date" id="signup-dob">
         </div>
-        
-        <!-- Gallery Photo Upload -->
         <div class="input-group">
           <label>Upload Profile Photo (From Gallery)</label>
           <input type="file" id="signup-photo-file" accept="image/*" onchange="handlePhotoUpload(event)">
@@ -73,7 +66,6 @@
         </div>
       </div>
 
-      <!-- Developer Verification Tag with Sandeep's Picture -->
       <div class="creator-tag-card">
         <div class="creator-avatar-wrap">
           <img src="sandeep.jpg" alt="Sandeep Choudhary" class="creator-mini-pic" id="dev-photo-auth" onerror="this.src='https://api.dicebear.com/7.x/adventurer/svg?seed=Sandeep'">
@@ -123,6 +115,37 @@
     </div>
   </div>
 
+  <!-- Edit Profile Modal -->
+  <div id="edit-profile-modal" class="overlay hidden">
+    <div class="auth-card">
+      <div class="brand-badge">PROFILE SETTINGS</div>
+      <h2>Update Profile</h2>
+      <p class="auth-sub">Change your name, DOB or profile photo</p>
+      
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="edit-fullname" placeholder="Your Name">
+      </div>
+      <div class="input-group">
+        <label>Date of Birth</label>
+        <input type="date" id="edit-dob">
+      </div>
+      <div class="input-group">
+        <label>Change Profile Photo</label>
+        <input type="file" id="edit-photo-file" accept="image/*" onchange="handleEditPhotoUpload(event)">
+        <div class="avatar-preview-box">
+          <img id="edit-avatar-preview-img" src="" alt="Profile Preview">
+        </div>
+      </div>
+
+      <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn-glow-primary" style="flex:1;" onclick="saveProfileChanges()">Save Changes</button>
+        <button class="btn-outline" style="flex:1; margin-top:0;" onclick="closeEditProfileModal()">Cancel</button>
+      </div>
+      <p id="edit-profile-msg" class="error-msg"></p>
+    </div>
+  </div>
+
   <!-- Main Application Container -->
   <div id="app-container" class="container hidden">
     <!-- Top Modern Navbar -->
@@ -149,11 +172,12 @@
         </div>
 
         <div class="user-profile-pill">
-          <img id="user-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=Sandy" alt="Profile" class="user-avatar">
+          <img id="user-avatar-img" src="" alt="Profile" class="user-avatar">
           <div class="user-info">
             <span id="user-name-display" class="user-name">User</span>
             <span id="user-email-display" class="user-email">email@domain.com</span>
           </div>
+          <button class="btn-icon-edit" title="Edit Profile" onclick="openEditProfileModal()">⚙️</button>
           <button class="btn-icon-logout" title="Logout" onclick="handleLogout()">⏻</button>
         </div>
       </div>
@@ -427,7 +451,7 @@
       </div>
     </div>
 
-    <!-- App Creator Footer with Sandeep's Picture -->
+    <!-- App Creator Footer -->
     <footer class="app-footer">
       <div class="footer-left">
         <div class="footer-logo">APEX FINANCE</div>
@@ -448,13 +472,11 @@
 
   <!-- Floating AI Sandy Assistant Button -->
   <button class="btn-floating-ai-sandy" onclick="openAISandyModal()" title="Ask AI Sandy">
-    <div class="ai-avatar-pulse">
-      🤖
-    </div>
+    <div class="ai-avatar-pulse">🤖</div>
     <span class="ai-label">AI Sandy</span>
   </button>
 
-  <!-- AI Sandy Smart Assistant Modal -->
+  <!-- AI Sandy Chat Card Modal -->
   <div id="ai-sandy-modal" class="overlay hidden">
     <div class="ai-chat-card">
       <div class="ai-card-header">
@@ -475,7 +497,6 @@
         </div>
       </div>
 
-      <!-- Quick AI Chips -->
       <div class="ai-quick-chips">
         <button onclick="sendQuickPrompt('How do I generate a PDF statement for my friend?')">📄 PDF Statement Help</button>
         <button onclick="sendQuickPrompt('How does the Dues & Receivables (Khata) work?')">🤝 Explain Khata Ledger</button>
@@ -490,6 +511,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=9"></script>
+  <script src="script.js?v=10"></script>
 </body>
 </html>

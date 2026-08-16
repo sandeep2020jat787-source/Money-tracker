@@ -7,6 +7,7 @@ var currentUser = null;
 var userProfile = null;
 var isSignUpMode = false;
 var uploadedPhotoBase64 = null;
+var editPhotoBase64 = null;
 
 var transactions = [];
 var loans = [];
@@ -44,7 +45,7 @@ async function checkCurrentSession() {
   }
 }
 
-// Fetch Profile from DB
+// Fetch Profile from DB (Prioritizes Database Profile over default metadata)
 async function fetchUserProfile() {
   if (!dbClient || !currentUser) return;
 
@@ -55,13 +56,13 @@ async function fetchUserProfile() {
     var meta = currentUser.user_metadata || {};
     userProfile = {
       full_name: meta.full_name || currentUser.email.split("@")[0],
-      dob: meta.dob || "—",
+      dob: meta.dob || "",
       avatar_url: meta.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + currentUser.email
     };
   }
 }
 
-// Handle Local Gallery/Camera Photo Upload & Compress
+// Handle Sign-Up Gallery Photo Upload & Compress
 function handlePhotoUpload(event) {
   var file = event.target.files[0];
   if (!file) return;
@@ -70,7 +71,6 @@ function handlePhotoUpload(event) {
   reader.onload = function(e) {
     var img = new Image();
     img.onload = function() {
-      // Resize to compact avatar
       var canvas = document.createElement("canvas");
       var ctx = canvas.getContext("2d");
       var maxDim = 150;
@@ -102,7 +102,106 @@ function handlePhotoUpload(event) {
   reader.readAsDataURL(file);
 }
 
-// Auth Toggle (Login <-> Sign Up)
+// Handle Edit Profile Gallery Photo Upload
+function handleEditPhotoUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement("canvas");
+      var ctx = canvas.getContext("2d");
+      var maxDim = 150;
+      var width = img.width;
+      var height = img.height;
+
+      if (width > height) {
+        if (width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        }
+      } else {
+        if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      editPhotoBase64 = canvas.toDataURL("image/jpeg", 0.85);
+      var preview = document.getElementById("edit-avatar-preview-img");
+      if (preview) preview.src = editPhotoBase64;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Edit Profile Modal Controls
+function openEditProfileModal() {
+  if (!userProfile) return;
+  document.getElementById("edit-fullname").value = userProfile.full_name || "";
+  document.getElementById("edit-dob").value = userProfile.dob || "";
+  document.getElementById("edit-avatar-preview-img").src = userProfile.avatar_url || "";
+  document.getElementById("edit-profile-msg").innerText = "";
+  editPhotoBase64 = null;
+  document.getElementById("edit-profile-modal").classList.remove("hidden");
+}
+
+function closeEditProfileModal() {
+  document.getElementById("edit-profile-modal").classList.add("hidden");
+}
+
+// Save Profile Changes to Database
+async function saveProfileChanges() {
+  if (!currentUser || !dbClient) return;
+
+  var newName = document.getElementById("edit-fullname").value.trim();
+  var newDob = document.getElementById("edit-dob").value;
+  var msg = document.getElementById("edit-profile-msg");
+
+  if (!newName) {
+    msg.style.color = "#f87171";
+    msg.innerText = "Name cannot be empty.";
+    return;
+  }
+
+  var updatedAvatar = editPhotoBase64 || userProfile.avatar_url;
+
+  var updates = {
+    id: currentUser.id,
+    full_name: newName,
+    dob: newDob,
+    avatar_url: updatedAvatar,
+    updated_at: new Date()
+  };
+
+  var { error } = await dbClient.from("profiles").upsert(updates);
+  if (error) {
+    msg.style.color = "#f87171";
+    msg.innerText = "Error: " + error.message;
+    return;
+  }
+
+  userProfile = updates;
+  msg.style.color = "#4ade80";
+  msg.innerText = "Profile updated successfully!";
+
+  // Update Navbar UI immediately
+  document.getElementById("user-name-display").innerText = userProfile.full_name;
+  document.getElementById("user-avatar-img").src = userProfile.avatar_url;
+
+  setTimeout(function() {
+    closeEditProfileModal();
+  }, 1000);
+}
+
+// Auth Toggle
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   var title = document.getElementById("auth-title");
@@ -132,7 +231,7 @@ function toggleAuthMode() {
   }
 }
 
-// Auth Submission Handler
+// Auth Handler
 async function handleAuth() {
   var email = document.getElementById("auth-email").value.trim();
   var password = document.getElementById("auth-password").value.trim();
@@ -152,11 +251,7 @@ async function handleAuth() {
       email: email,
       password: password,
       options: {
-        data: {
-          full_name: fullName,
-          dob: dob,
-          avatar_url: avatarUrl
-        }
+        data: { full_name: fullName, dob: dob, avatar_url: avatarUrl }
       }
     });
 
@@ -167,7 +262,6 @@ async function handleAuth() {
 
     currentUser = res.data.user;
 
-    // Upsert into profiles table
     if (currentUser) {
       await dbClient.from("profiles").upsert({
         id: currentUser.id,
@@ -272,7 +366,7 @@ async function updateNewPassword() {
   } else {
     localStorage.setItem("last_password_changed_time", now.toString());
     msg.style.color = "#4ade80";
-    msg.innerText = "Password updated successfully! Redirecting to login...";
+    msg.innerText = "Password updated successfully! Redirecting...";
     setTimeout(function() {
       document.getElementById("auth-new-pass-box").classList.add("hidden");
       document.getElementById("auth-main-box").classList.remove("hidden");
@@ -301,13 +395,12 @@ async function launchDashboard() {
   document.getElementById("auth-overlay").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
 
-  // Populate User Profile in Header
   if (userProfile && currentUser) {
     var nameEl = document.getElementById("user-name-display");
     var emailEl = document.getElementById("user-email-display");
     var avatarEl = document.getElementById("user-avatar-img");
 
-    if (nameEl) nameEl.innerText = userProfile.full_name || "Sandeep User";
+    if (nameEl) nameEl.innerText = userProfile.full_name || "User";
     if (emailEl) emailEl.innerText = currentUser.email;
     if (avatarEl) avatarEl.src = userProfile.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=Sandy";
   }
@@ -326,7 +419,6 @@ async function launchDashboard() {
   await loadDataFromSupabase();
 }
 
-// Load Authenticated Data
 async function loadDataFromSupabase() {
   if (!dbClient || !currentUser) return;
 
@@ -347,7 +439,6 @@ async function loadDataFromSupabase() {
   }
 }
 
-// Add Transaction
 async function addTransaction(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -373,7 +464,6 @@ async function addTransaction(e) {
   await loadDataFromSupabase();
 }
 
-// Add Debt / Khata Entry
 async function addDebt(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -400,7 +490,6 @@ async function addDebt(e) {
   await loadDataFromSupabase();
 }
 
-// Add Loan Record
 async function addLoan(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -422,7 +511,6 @@ async function addLoan(e) {
   await loadDataFromSupabase();
 }
 
-// Action Handlers
 async function toggleSettleDebt(id, currentStatus) {
   if (dbClient) {
     await dbClient.from("debts").update({ is_settled: !currentStatus }).eq("id", id);
@@ -459,7 +547,6 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
-// Consolidated PDF Statement
 function generatePersonStatementPDF(targetPersonName) {
   var personRecords = debts.filter(function(d) {
     return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase() && !d.is_settled;
@@ -492,7 +579,7 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFont("helvetica", "normal");
   doc.text("Statement Date: " + new Date().toLocaleDateString('en-IN'), 14, 40);
   doc.text("Statement For: " + targetPersonName, 14, 46);
-  doc.text("Account Created By: " + (userProfile ? userProfile.full_name : "Sandeep User"), 14, 52);
+  doc.text("Account Created By: " + (userProfile ? userProfile.full_name : "User"), 14, 52);
 
   var totalLent = 0;
   var totalBorrowed = 0;
@@ -573,7 +660,6 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.save("Statement_" + safeName + ".pdf");
 }
 
-// Summary Calculation
 function updateSummaries(dataForTotals) {
   var dataList = dataForTotals || transactions;
   var totalBalance = 0;
@@ -620,7 +706,6 @@ function updateSummaries(dataForTotals) {
   if (elPay) elPay.innerText = "₹" + totalToPay.toLocaleString();
 }
 
-// Filter Logic
 function applyFilters() {
   var searchInput = document.getElementById("searchInput");
   var query = searchInput ? searchInput.value.toLowerCase() : "";
@@ -659,7 +744,6 @@ function filterTransactions() {
   applyFilters();
 }
 
-// Render DOM Tables
 function renderTransactionTable(dataToRender) {
   var data = dataToRender || transactions;
   var txList = document.getElementById("tx-list");
@@ -746,7 +830,6 @@ function renderAll() {
   applyFilters();
 }
 
-// Export CSV
 function exportToCSV() {
   var selectedMonth = document.getElementById("monthFilter").value;
   var dataToExport = transactions;
@@ -795,10 +878,7 @@ function exportToCSV() {
   URL.revokeObjectURL(url);
 }
 
-// -------------------------------------------------------------
-// 🤖 AI SANDY (Gemini Smart Assistant)
-// -------------------------------------------------------------
-
+// AI Sandy
 function openAISandyModal() {
   document.getElementById("ai-sandy-modal").classList.remove("hidden");
 }
@@ -823,17 +903,13 @@ function sendQueryToAISandy() {
   if (!query) return;
 
   var chatBody = document.getElementById("ai-chat-body");
-
-  // Append User message
   var userDiv = document.createElement("div");
   userDiv.className = "ai-message user";
   userDiv.innerHTML = "<strong>You:</strong><p>" + query + "</p>";
   chatBody.appendChild(userDiv);
   input.value = "";
-
   chatBody.scrollTop = chatBody.scrollHeight;
 
-  // Generate Smart Contextual Response
   setTimeout(function() {
     var response = generateAISandyResponse(query);
     var botDiv = document.createElement("div");
@@ -848,32 +924,24 @@ function generateAISandyResponse(q) {
   var lower = q.toLowerCase();
 
   if (lower.includes("pdf") || lower.includes("statement") || lower.includes("share")) {
-    return "To generate a PDF statement for anyone: Go to <strong>Dues & Receivables (Ledger)</strong> on the right side. Find the person's name and click the <strong>📄 PDF</strong> button. It will calculate all given & borrowed amounts, subtract them, and download an official itemized PDF statement ready to share on WhatsApp!";
+    return "To generate a PDF statement for anyone: Go to <strong>Dues & Receivables (Ledger)</strong> on the right side. Click the <strong>📄 PDF</strong> button to download an official itemized PDF statement.";
   }
 
   if (lower.includes("khata") || lower.includes("due") || lower.includes("receivable") || lower.includes("lent") || lower.includes("borrow")) {
-    return "The <strong>Dues & Receivables (Khata)</strong> section lets you record when you give money (Receivable 🟢) or borrow money (Payable 🔴). It tracks multiple entries for the same person and net-balances them automatically!";
+    return "The <strong>Dues & Receivables (Khata)</strong> section lets you record when you give money (Receivable 🟢) or borrow money (Payable 🔴) with automatic net-balancing.";
   }
 
   if (lower.includes("excel") || lower.includes("csv") || lower.includes("export") || lower.includes("download")) {
-    return "Click the green <strong>📥 Export Excel (CSV)</strong> button at the top right toolbar. If you selected a specific month in the Statement Period filter, it will export only that month; otherwise, it exports your entire lifetime history.";
+    return "Click the green <strong>📥 Export Excel (CSV)</strong> button at the top right toolbar to download your lifetime or monthly records.";
   }
 
-  if (lower.includes("loan") || lower.includes("emi") || lower.includes("burden")) {
-    return "Use the <strong>🏦 Add Loan / EMI Burden</strong> form on the left. Enter the loan title (e.g., Bike EMI, Car, Home), monthly installment, and total remaining principal. Your monthly committed outflow will reflect in the top summary badge.";
-  }
-
-  if (lower.includes("password") || lower.includes("reset") || lower.includes("forgot") || lower.includes("login")) {
-    return "If you forget your password, click 'Forgot Password?' on the login screen. You will receive an instant recovery link on your email. For maximum security, password resets are restricted to once every 60 minutes.";
-  }
-
-  if (lower.includes("tip") || lower.includes("save") || lower.includes("budget") || lower.includes("fuel")) {
-    return "💡 <strong>Smart Financial Advice:</strong><br>1. Follow the 50/30/20 rule (50% essentials, 30% lifestyle/fuel, 20% savings/investments).<br>2. Clear high-interest short-term debt first before non-essential purchases.<br>3. Review your monthly export report on the 1st of every month to track unwanted dining & impulse spending.";
+  if (lower.includes("profile") || lower.includes("edit") || lower.includes("photo") || lower.includes("picture")) {
+    return "You can update your profile name, date of birth, or profile gallery photo anytime by clicking the gear icon (⚙️) next to your logout button in the top navigation bar.";
   }
 
   if (lower.includes("creator") || lower.includes("who made") || lower.includes("sandeep") || lower.includes("developer")) {
-    return "Apex Finance is proudly designed and built by <strong>Sandeep Choudhary</strong>, an Automotive Tech & Software Engineer, passionate about building smart personal software.";
+    return "Apex Finance is proudly designed and built by <strong>Sandeep Choudhary</strong>, an Automotive Tech & Software Engineer!";
   }
 
-  return "I'm always here to assist you with Apex Finance! You can ask me how to manage daily transactions, generate borrower PDF statements, filter monthly statements, or calculate loan EMIs.";
+  return "I'm always here to assist you with Apex Finance! Ask me about transactions, borrower PDF statements, loans, or profile updates.";
 }
