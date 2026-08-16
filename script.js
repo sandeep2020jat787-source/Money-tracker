@@ -3,71 +3,127 @@ var SUPABASE_URL = "https://vewtbsdpwtbuzmpthrpl.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZld3Ric2Rwd3RidXptcHRocnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4NTYwNDUsImV4cCI6MjEwMjQzMjA0NX0.uDcxgjnox3X7wXXyn-TaCYb-7miIWr8w_ak3hgLgozY";
 
 var dbClient = null;
+var currentUser = null;
+var isSignUpMode = false;
+
 var transactions = [];
 var loans = [];
 var debts = [];
-var appSecurity = { pin: "1234", recovery_phone: "9999999999" };
 var showSettled = false;
 
-// Initialize Supabase Client
+// Initialize Supabase & Session Check
 try {
   if (window.supabase) {
     dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    fetchSecuritySettings();
+    checkCurrentSession();
   }
 } catch (e) {
   console.error("Init Error:", e);
 }
 
-// Fetch PIN and Recovery Details
-async function fetchSecuritySettings() {
+// Session Check on Page Load
+async function checkCurrentSession() {
   if (!dbClient) return;
-  try {
-    var res = await dbClient.from("app_settings").select("*").eq("id", 1).single();
-    if (res.data) {
-      appSecurity = res.data;
-    }
-  } catch (err) {
-    console.error("Settings load error:", err);
+  var { data } = await dbClient.auth.getSession();
+  if (data && data.session && data.session.user) {
+    currentUser = data.session.user;
+    launchDashboard();
   }
 }
 
-// Unlock Action
-async function unlockApp() {
-  await fetchSecuritySettings();
-  var pinInput = document.getElementById("pin-input");
-  var enteredPin = pinInput ? pinInput.value.trim() : "";
-  var errorMsg = document.getElementById("pin-error");
+// Auth Toggle (Login <-> Sign Up)
+function toggleAuthMode() {
+  isSignUpMode = !isSignUpMode;
+  var title = document.getElementById("auth-title");
+  var submitBtn = document.getElementById("auth-submit-btn");
+  var toggleText = document.getElementById("auth-toggle-text");
+  var toggleLink = document.getElementById("auth-toggle-link");
+  var errorMsg = document.getElementById("auth-error");
 
-  if (enteredPin === appSecurity.pin) {
-    if (errorMsg) errorMsg.innerText = "";
-    document.getElementById("auth-overlay").classList.add("hidden");
-    document.getElementById("app-container").classList.remove("hidden");
-    
-    // Set default dates to today
-    var todayStr = new Date().toISOString().split("T")[0];
-    var dateInput = document.getElementById("tx-date");
-    if (dateInput) dateInput.value = todayStr;
+  errorMsg.innerText = "";
 
-    var debtDateInput = document.getElementById("debt-date");
-    if (debtDateInput) debtDateInput.value = todayStr;
-
-    var currentMonth = new Date().toISOString().slice(0, 7);
-    var monthFilter = document.getElementById("monthFilter");
-    if (monthFilter) monthFilter.value = currentMonth;
-
-    await loadDataFromSupabase();
+  if (isSignUpMode) {
+    title.innerText = "Create New Account";
+    submitBtn.innerText = "Sign Up";
+    toggleText.innerText = "Already have an account?";
+    toggleLink.innerText = "Login";
   } else {
-    if (errorMsg) errorMsg.innerText = "Invalid PIN. Try again.";
+    title.innerText = "Login to Account";
+    submitBtn.innerText = "Login";
+    toggleText.innerText = "Don't have an account?";
+    toggleLink.innerText = "Sign Up";
   }
 }
 
-// Load Data from Supabase
-async function loadDataFromSupabase() {
-  if (!dbClient) {
-    renderAll();
+// Auth Submission Handler
+async function handleAuth() {
+  var email = document.getElementById("auth-email").value.trim();
+  var password = document.getElementById("auth-password").value.trim();
+  var errorMsg = document.getElementById("auth-error");
+
+  if (!email || !password) {
+    errorMsg.innerText = "Please enter email and password.";
     return;
   }
+
+  if (isSignUpMode) {
+    var res = await dbClient.auth.signUp({ email: email, password: password });
+    if (res.error) {
+      errorMsg.innerText = res.error.message;
+    } else {
+      currentUser = res.data.user;
+      launchDashboard();
+    }
+  } else {
+    var res = await dbClient.auth.signInWithPassword({ email: email, password: password });
+    if (res.error) {
+      errorMsg.innerText = res.error.message;
+    } else {
+      currentUser = res.data.user;
+      launchDashboard();
+    }
+  }
+}
+
+// Logout Handler
+async function handleLogout() {
+  if (dbClient) {
+    await dbClient.auth.signOut();
+  }
+  currentUser = null;
+  document.getElementById("app-container").classList.add("hidden");
+  document.getElementById("auth-overlay").classList.remove("hidden");
+  document.getElementById("auth-email").value = "";
+  document.getElementById("auth-password").value = "";
+}
+
+// Launch Dashboard After Login
+async function launchDashboard() {
+  document.getElementById("auth-overlay").classList.add("hidden");
+  document.getElementById("app-container").classList.remove("hidden");
+
+  var userDisplay = document.getElementById("user-display");
+  if (userDisplay && currentUser) {
+    userDisplay.innerText = "Logged in as: " + currentUser.email;
+  }
+
+  var todayStr = new Date().toISOString().split("T")[0];
+  var dateInput = document.getElementById("tx-date");
+  if (dateInput) dateInput.value = todayStr;
+
+  var debtDateInput = document.getElementById("debt-date");
+  if (debtDateInput) debtDateInput.value = todayStr;
+
+  var currentMonth = new Date().toISOString().slice(0, 7);
+  var monthFilter = document.getElementById("monthFilter");
+  if (monthFilter) monthFilter.value = currentMonth;
+
+  await loadDataFromSupabase();
+}
+
+// Load Authenticated User Data
+async function loadDataFromSupabase() {
+  if (!dbClient || !currentUser) return;
 
   try {
     var txRes = await dbClient.from("transactions").select("*").order("id", { ascending: false });
@@ -86,10 +142,13 @@ async function loadDataFromSupabase() {
   }
 }
 
-// Add Transaction
+// Add Transaction (Linked with user_id)
 async function addTransaction(e) {
   e.preventDefault();
+  if (!currentUser) return;
+
   var tx = {
+    user_id: currentUser.id,
     date: document.getElementById("tx-date").value,
     account: document.getElementById("tx-account").value,
     type: document.getElementById("tx-type").value,
@@ -105,14 +164,17 @@ async function addTransaction(e) {
 
   document.getElementById("tx-form").reset();
   var dateInput = document.getElementById("tx-date");
-  if (dateInput) dateInput.valueAsDate = new Date();
+  if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
   await loadDataFromSupabase();
 }
 
-// Add Debt / Receivable (Transaction Date)
+// Add Debt (Linked with user_id)
 async function addDebt(e) {
   e.preventDefault();
+  if (!currentUser) return;
+
   var debt = {
+    user_id: currentUser.id,
     person_name: document.getElementById("debt-person").value.trim(),
     type: document.getElementById("debt-type").value,
     amount: parseFloat(document.getElementById("debt-amount").value),
@@ -133,10 +195,13 @@ async function addDebt(e) {
   await loadDataFromSupabase();
 }
 
-// Add Loan
+// Add Loan (Linked with user_id)
 async function addLoan(e) {
   e.preventDefault();
+  if (!currentUser) return;
+
   var loan = {
+    user_id: currentUser.id,
     name: document.getElementById("loan-name").value,
     emi: parseFloat(document.getElementById("loan-emi").value),
     remaining: parseFloat(document.getElementById("loan-remaining").value),
@@ -152,7 +217,7 @@ async function addLoan(e) {
   await loadDataFromSupabase();
 }
 
-// Action Handlers
+// Actions
 async function toggleSettleDebt(id, currentStatus) {
   if (dbClient) {
     await dbClient.from("debts").update({ is_settled: !currentStatus }).eq("id", id);
@@ -189,7 +254,7 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
-// CONSOLIDATED PERSON PDF GENERATOR (With Transaction Dates)
+// Consolidated Person Statement PDF
 function generatePersonStatementPDF(targetPersonName) {
   var personRecords = debts.filter(function(d) {
     return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase() && !d.is_settled;
@@ -209,7 +274,6 @@ function generatePersonStatementPDF(targetPersonName) {
   var { jsPDF } = window.jspdf;
   var doc = new jsPDF();
 
-  // Header Banner
   doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, 210, 30, 'F');
   
@@ -218,13 +282,12 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFont("helvetica", "bold");
   doc.text("STATEMENT OF ACCOUNT", 14, 18);
 
-  // Meta Info
   doc.setFontSize(10);
   doc.setTextColor(50, 50, 50);
   doc.setFont("helvetica", "normal");
   doc.text("Statement Date: " + new Date().toLocaleDateString('en-IN'), 14, 40);
   doc.text("Statement For: " + targetPersonName, 14, 46);
-  doc.text("Total Records: " + personRecords.length, 14, 52);
+  doc.text("Account Owner: " + (currentUser ? currentUser.email : "Self"), 14, 52);
 
   var totalLent = 0;
   var totalBorrowed = 0;
@@ -233,11 +296,8 @@ function generatePersonStatementPDF(targetPersonName) {
     var amt = parseFloat(item.amount) || 0;
     var isLent = (item.type === "give");
 
-    if (isLent) {
-      totalLent += amt;
-    } else {
-      totalBorrowed += amt;
-    }
+    if (isLent) totalLent += amt;
+    else totalBorrowed += amt;
 
     return [
       index + 1,
@@ -269,7 +329,6 @@ function generatePersonStatementPDF(targetPersonName) {
   var netBalance = totalLent - totalBorrowed;
   var finalY = doc.lastAutoTable.finalY + 10;
 
-  // Summary Box inside PDF
   doc.setFillColor(245, 247, 250);
   doc.rect(14, finalY, 182, 36, 'F');
   doc.setDrawColor(209, 213, 219);
@@ -303,7 +362,7 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFontSize(9);
   doc.setTextColor(140, 140, 140);
   doc.setFont("helvetica", "italic");
-  doc.text("This is an electronically generated statement of dues and receivables.", 14, finalY + 45);
+  doc.text("This is an electronically generated statement of record.", 14, finalY + 45);
 
   var safeName = targetPersonName.replace(/[^a-zA-Z0-9]/g, "_");
   doc.save("Statement_" + safeName + ".pdf");
@@ -395,7 +454,7 @@ function filterTransactions() {
   applyFilters();
 }
 
-// Render Tables
+// Render DOM Tables
 function renderTransactionTable(dataToRender) {
   var data = dataToRender || transactions;
   var txList = document.getElementById("tx-list");
@@ -475,7 +534,7 @@ function renderAll() {
   applyFilters();
 }
 
-// Mobile CSV Export
+// Export CSV
 function exportToCSV() {
   var selectedMonth = document.getElementById("monthFilter").value;
   var dataToExport = transactions;
@@ -522,103 +581,4 @@ function exportToCSV() {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-}
-
-// Security Handlers
-function openForgotModal() {
-  document.getElementById("forgot-modal").classList.remove("hidden");
-}
-
-function closeForgotModal() {
-  document.getElementById("forgot-modal").classList.add("hidden");
-  document.getElementById("recovery-phone-input").value = "";
-  document.getElementById("reset-new-pin").value = "";
-  document.getElementById("forgot-modal-msg").innerText = "";
-}
-
-async function processPinReset() {
-  var phone = document.getElementById("recovery-phone-input").value.trim();
-  var newP = document.getElementById("reset-new-pin").value.trim();
-  var msg = document.getElementById("forgot-modal-msg");
-
-  await fetchSecuritySettings();
-
-  if (phone !== appSecurity.recovery_phone) {
-    msg.style.color = "#dc2626";
-    msg.innerText = "Phone number does not match records.";
-    return;
-  }
-
-  if (newP.length < 4) {
-    msg.style.color = "#dc2626";
-    msg.innerText = "PIN must be at least 4 digits.";
-    return;
-  }
-
-  if (dbClient) {
-    var res = await dbClient.from("app_settings").update({ pin: newP }).eq("id", 1);
-    if (res.error) {
-      msg.innerText = "Update error: " + res.error.message;
-      return;
-    }
-  }
-
-  appSecurity.pin = newP;
-  msg.style.color = "#16a34a";
-  msg.innerText = "PIN Reset Success! You can login now.";
-  setTimeout(function() {
-    closeForgotModal();
-    document.getElementById("pin-input").value = newP;
-  }, 1200);
-}
-
-function openPinModal() {
-  document.getElementById("pin-modal").classList.remove("hidden");
-  document.getElementById("new-phone").value = appSecurity.recovery_phone || "";
-}
-
-function closePinModal() {
-  document.getElementById("pin-modal").classList.add("hidden");
-  document.getElementById("current-pin").value = "";
-  document.getElementById("new-pin").value = "";
-  document.getElementById("pin-modal-msg").innerText = "";
-}
-
-async function saveNewSecurityDetails() {
-  var curr = document.getElementById("current-pin").value.trim();
-  var newP = document.getElementById("new-pin").value.trim();
-  var newPhone = document.getElementById("new-phone").value.trim();
-  var msg = document.getElementById("pin-modal-msg");
-
-  if (curr !== appSecurity.pin) {
-    msg.style.color = "#dc2626";
-    msg.innerText = "Current PIN is incorrect.";
-    return;
-  }
-
-  var updates = {};
-  if (newP) {
-    if (newP.length < 4) {
-      msg.style.color = "#dc2626";
-      msg.innerText = "New PIN must be 4 digits.";
-      return;
-    }
-    updates.pin = newP;
-  }
-  if (newPhone) {
-    updates.recovery_phone = newPhone;
-  }
-
-  if (dbClient && Object.keys(updates).length > 0) {
-    var res = await dbClient.from("app_settings").update(updates).eq("id", 1);
-    if (res.error) {
-      msg.innerText = "Save failed: " + res.error.message;
-      return;
-    }
-  }
-
-  await fetchSecuritySettings();
-  msg.style.color = "#16a34a";
-  msg.innerText = "Settings updated successfully!";
-  setTimeout(closePinModal, 1200);
 }

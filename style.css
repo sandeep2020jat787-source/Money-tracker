@@ -20,7 +20,7 @@ body {
   display: none !important;
 }
 
-/* Security Overlay */
+/* Security / Auth Overlay */
 .overlay {
   position: fixed;
   inset: 0;
@@ -44,13 +44,13 @@ body {
 .auth-box input {
   width: 100%;
   padding: 10px;
-  margin: 10px 0;
-  font-size: 16px;
+  margin: 8px 0;
+  font-size: 15px;
   border: 1px solid #ccc;
   border-radius: 6px;
 }
 
-/* Header & Search */
+/* Header & Controls */
 header {
   display: flex;
   flex-wrap: wrap;
@@ -60,15 +60,33 @@ header {
   gap: 15px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .search-bar input {
-  padding: 10px 16px;
-  width: 280px;
+  padding: 8px 16px;
+  width: 240px;
   border-radius: 20px;
   border: 1px solid #dcdcdc;
   outline: none;
 }
 
-/* Controls Bar */
+.btn-logout {
+  background: #ef4444;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  width: auto;
+  margin: 0;
+}
+
 .controls-bar {
   display: flex;
   flex-wrap: wrap;
@@ -98,17 +116,6 @@ header {
 
 .btn-export {
   background: #059669;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  width: auto;
-  border: none;
-  font-weight: 600;
-}
-
-.btn-settings {
-  background: #4b5563;
   color: white;
   padding: 8px 14px;
   border-radius: 6px;
@@ -260,6 +267,19 @@ th { background-color: #f8fafc; font-weight: 600; }
   text-decoration: line-through;
 }
 
+.btn-pdf {
+  background: #0284c7;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  width: auto;
+  margin: 0 4px 0 0;
+  font-weight: 600;
+}
+
 .btn-settle {
   background: #10b981;
   color: white;
@@ -284,23 +304,12 @@ th { background-color: #f8fafc; font-weight: 600; }
   cursor: pointer;
 }
 
-.modal-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.modal-buttons button {
-  flex: 1;
-}
-
 .error-msg {
   color: #dc2626;
   font-size: 13px;
   margin-top: 8px;
 }
 
-/* Mobile Responsiveness */
 @media (max-width: 850px) {
   .grid-layout {
     grid-template-columns: 1fr;
@@ -308,16 +317,4 @@ th { background-color: #f8fafc; font-weight: 600; }
   .search-bar input {
     width: 100%;
   }
-}
-.btn-pdf {
-  background: #0284c7;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  width: auto;
-  margin: 0 4px 0 0;
-  font-weight: 600;
 }

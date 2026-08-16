@@ -8,7 +8,7 @@
   <!-- Supabase CDN Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <!-- jsPDF & autoTable CDN for PDF Generation -->
+  <!-- jsPDF & autoTable CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
@@ -16,42 +16,35 @@
 </head>
 <body>
 
-  <!-- Security PIN Screen -->
+  <!-- Auth Screen (Login & Sign Up) -->
   <div id="auth-overlay" class="overlay">
     <div class="auth-box">
-      <h2>Enter Security PIN</h2>
-      <input type="password" id="pin-input" placeholder="Enter PIN" inputmode="numeric">
-      <button class="btn-primary" onclick="unlockApp()">Unlock</button>
-      <p id="pin-error" class="error-msg"></p>
+      <h2 id="auth-title">Login to Account</h2>
+      <input type="email" id="auth-email" placeholder="Enter Email" required>
+      <input type="password" id="auth-password" placeholder="Enter Password (min 6 chars)" required>
       
-      <div style="margin-top: 15px;">
-        <a href="javascript:void(0)" onclick="openForgotModal()" style="color: #2563eb; font-size: 13px; text-decoration: none;">Forgot PIN?</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Forgot PIN Modal -->
-  <div id="forgot-modal" class="overlay hidden">
-    <div class="auth-box">
-      <h2>Reset Security PIN</h2>
-      <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Enter your registered Recovery Phone Number</p>
-      <input type="tel" id="recovery-phone-input" placeholder="Enter Mobile Number">
-      <input type="password" id="reset-new-pin" placeholder="Enter New 4-digit PIN" inputmode="numeric">
+      <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth()">Login</button>
+      <p id="auth-error" class="error-msg"></p>
       
-      <div class="modal-buttons">
-        <button class="btn-primary" onclick="processPinReset()">Reset PIN</button>
-        <button class="btn-del" onclick="closeForgotModal()">Cancel</button>
+      <div style="margin-top: 15px; font-size: 13px;">
+        <span id="auth-toggle-text">Don't have an account?</span>
+        <a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()" style="color: #2563eb; font-weight: 600; text-decoration: none; margin-left: 5px;">Sign Up</a>
       </div>
-      <p id="forgot-modal-msg" class="error-msg"></p>
     </div>
   </div>
 
   <!-- Main Application Container -->
   <div id="app-container" class="container hidden">
     <header>
-      <h1>Personal Finance Tracker</h1>
-      <div class="search-bar">
-        <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search transactions, categories, names...">
+      <div>
+        <h1>Personal Finance Tracker</h1>
+        <small id="user-display" style="color: #666; font-size: 13px;"></small>
+      </div>
+      <div class="header-right">
+        <div class="search-bar">
+          <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search records...">
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Logout</button>
       </div>
     </header>
 
@@ -64,7 +57,6 @@
       </div>
       <div class="action-group">
         <button class="btn-export" onclick="exportToCSV()">📥 Export to Excel</button>
-        <button class="btn-settings" onclick="openPinModal()">⚙️ Security Settings</button>
       </div>
     </div>
 
@@ -129,7 +121,7 @@
           </form>
         </div>
 
-        <!-- Receivables & Payables (Khata) Form -->
+        <!-- Receivables & Payables Form -->
         <div class="box">
           <h2>Add Dues & Receivables</h2>
           <form id="debt-form" onsubmit="addDebt(event)">
@@ -248,22 +240,6 @@
     </div>
   </div>
 
-  <!-- Security Settings Modal -->
-  <div id="pin-modal" class="overlay hidden">
-    <div class="auth-box">
-      <h2>Security Settings</h2>
-      <input type="password" id="current-pin" placeholder="Current PIN" inputmode="numeric">
-      <input type="password" id="new-pin" placeholder="New PIN (4 digits)" inputmode="numeric">
-      <input type="tel" id="new-phone" placeholder="Update Recovery Mobile No.">
-      
-      <div class="modal-buttons">
-        <button class="btn-primary" onclick="saveNewSecurityDetails()">Save Changes</button>
-        <button class="btn-del" onclick="closePinModal()">Cancel</button>
-      </div>
-      <p id="pin-modal-msg" class="error-msg"></p>
-    </div>
-  </div>
-
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=5"></script>
 </body>
 </html>
