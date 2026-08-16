@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Personal Finance Tracker</title>
+  <title>Apex Finance | Smart Money & Ledger Tracker</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Supabase CDN Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -18,207 +23,339 @@
 
   <!-- Auth Screen (Login / Sign Up / Forgot Password) -->
   <div id="auth-overlay" class="overlay">
-    <!-- Main Login / Sign Up Card -->
-    <div class="auth-box" id="auth-main-box">
-      <h2 id="auth-title">Login to Account</h2>
-      <input type="email" id="auth-email" placeholder="Enter Email" required>
-      <input type="password" id="auth-password" placeholder="Enter Password (min 6 chars)" required>
+    <!-- Main Auth Card -->
+    <div class="auth-card" id="auth-main-box">
+      <div class="brand-badge">APEX FINANCE</div>
+      <h2 id="auth-title">Welcome Back</h2>
+      <p class="auth-sub" id="auth-sub-text">Enter your credentials to access your personal dashboard</p>
       
-      <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth()">Login</button>
+      <!-- Extra Sign-up Fields -->
+      <div id="signup-extra-fields" class="hidden">
+        <div class="input-group">
+          <label>Full Name</label>
+          <input type="text" id="signup-fullname" placeholder="e.g. Sandeep Choudhary">
+        </div>
+        <div class="input-group">
+          <label>Date of Birth</label>
+          <input type="date" id="signup-dob">
+        </div>
+        <div class="input-group">
+          <label>Choose Avatar Style</label>
+          <select id="signup-avatar" onchange="previewAvatar()">
+            <option value="https://api.dicebear.com/7.x/adventurer/svg?seed=Felix">Adventurer 1</option>
+            <option value="https://api.dicebear.com/7.x/adventurer/svg?seed=Shadow">Adventurer 2</option>
+            <option value="https://api.dicebear.com/7.x/bottts/svg?seed=Sandy">Cyber Sandy</option>
+            <option value="https://api.dicebear.com/7.x/avataaars/svg?seed=Ryan">Urban Cool</option>
+            <option value="https://api.dicebear.com/7.x/micah/svg?seed=Leo">Minimalist</option>
+          </select>
+          <div class="avatar-preview-box">
+            <img id="avatar-preview-img" src="https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" alt="Avatar Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Email Address</label>
+        <input type="email" id="auth-email" placeholder="name@example.com" required>
+      </div>
+      
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="••••••••" required>
+      </div>
+      
+      <button class="btn-glow-primary" id="auth-submit-btn" onclick="handleAuth()">Sign In</button>
       <p id="auth-error" class="error-msg"></p>
       
-      <div style="margin-top: 15px; font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+      <div class="auth-footer-links">
         <div>
           <span id="auth-toggle-text">Don't have an account?</span>
-          <a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()" style="color: #2563eb; font-weight: 600; text-decoration: none; margin-left: 5px;">Sign Up</a>
+          <a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()">Create Account</a>
         </div>
         <div>
-          <a href="javascript:void(0)" onclick="openForgotPasswordModal()" style="color: #6b7280; text-decoration: none;">Forgot Password?</a>
+          <a href="javascript:void(0)" onclick="openForgotPasswordModal()" class="muted-link">Forgot Password?</a>
         </div>
+      </div>
+
+      <div class="creator-tag">
+        Developed & Designed with ⚡ by <strong>Sandeep Choudhary</strong>
       </div>
     </div>
 
     <!-- Send Reset Email Card -->
-    <div class="auth-box hidden" id="auth-forgot-box">
+    <div class="auth-card hidden" id="auth-forgot-box">
+      <div class="brand-badge">SECURITY RECOVERY</div>
       <h2>Reset Password</h2>
-      <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Enter your registered email. We'll send a password recovery link.</p>
+      <p class="auth-sub">Enter your registered email to receive a recovery link.</p>
       
-      <!-- 60-Minute Policy Notice -->
-      <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; margin-bottom: 12px;">
-        <p style="font-size: 11px; color: #92400e; line-height: 1.4; margin: 0;">
-          ⚠️ <strong>Security Notice:</strong> You can only request a password reset once every 60 minutes. If you need to change it again, please try after 60 minutes.
-        </p>
+      <div class="notice-badge">
+        ⚠️ <strong>Security Policy:</strong> You can only request a password reset once every 60 minutes.
       </div>
 
-      <input type="email" id="forgot-email-input" placeholder="Registered Email">
-      <button class="btn-primary" onclick="sendPasswordResetEmail()">Send Recovery Link</button>
-      <button class="btn-clear" style="margin-top: 8px; width: 100%;" onclick="closeForgotPasswordModal()">Back to Login</button>
+      <div class="input-group">
+        <label>Registered Email</label>
+        <input type="email" id="forgot-email-input" placeholder="name@example.com">
+      </div>
+      <button class="btn-glow-primary" onclick="sendPasswordResetEmail()">Send Recovery Link</button>
+      <button class="btn-outline" onclick="closeForgotPasswordModal()">Back to Sign In</button>
       <p id="forgot-msg" class="error-msg"></p>
     </div>
 
-    <!-- Set New Password Card (Triggered via Email Link) -->
-    <div class="auth-box hidden" id="auth-new-pass-box">
-      <h2>Set New Password</h2>
-      <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Enter your new password below</p>
+    <!-- Set New Password Card -->
+    <div class="auth-card hidden" id="auth-new-pass-box">
+      <div class="brand-badge">SET PASSWORD</div>
+      <h2>Create New Password</h2>
+      <p class="auth-sub">Enter your new secure password below</p>
 
-      <!-- 60-Minute Policy Notice -->
-      <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; margin-bottom: 12px;">
-        <p style="font-size: 11px; color: #92400e; line-height: 1.4; margin: 0;">
-          ⚠️ <strong>Security Notice:</strong> You can only change your password once every 60 minutes. If you want to change it again, please try after 60 minutes.
-        </p>
+      <div class="notice-badge">
+        ⚠️ <strong>Security Policy:</strong> Password changes are restricted to once every 60 minutes.
       </div>
 
-      <input type="password" id="new-password-input" placeholder="New Password (min 6 chars)">
-      <button class="btn-primary" onclick="updateNewPassword()">Update Password</button>
+      <div class="input-group">
+        <label>New Password</label>
+        <input type="password" id="new-password-input" placeholder="Min 6 characters">
+      </div>
+      <button class="btn-glow-primary" onclick="updateNewPassword()">Update Password</button>
       <p id="new-pass-msg" class="error-msg"></p>
     </div>
   </div>
 
   <!-- Main Application Container -->
   <div id="app-container" class="container hidden">
-    <header>
-      <div>
-        <h1>Personal Finance Tracker</h1>
-        <small id="user-display" style="color: #666; font-size: 13px;"></small>
-      </div>
-      <div class="header-right">
-        <div class="search-bar">
-          <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search records...">
+    <!-- Top Modern Navbar -->
+    <nav class="navbar">
+      <div class="nav-left">
+        <div class="app-logo">APEX</div>
+        <div class="app-title-wrap">
+          <h2>Money & Ledger Tracker</h2>
+          <span class="badge-author">by Sandeep Choudhary</span>
         </div>
-        <button class="btn-logout" onclick="handleLogout()">Logout</button>
       </div>
-    </header>
 
-    <!-- Controls Bar -->
-    <div class="controls-bar">
-      <div class="filter-group">
-        <label for="monthFilter"><strong>Filter Month:</strong></label>
-        <input type="month" id="monthFilter" onchange="applyFilters()">
-        <button class="btn-clear" onclick="clearMonthFilter()">Show All</button>
+      <div class="nav-right">
+        <button class="btn-ai-sandy-nav" onclick="openAISandyModal()">
+          <span class="ai-pulse"></span>
+          🤖 Ask AI Sandy
+        </button>
+
+        <div class="search-wrap">
+          <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search transactions, notes, people...">
+        </div>
+
+        <div class="user-profile-pill">
+          <img id="user-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=Sandy" alt="Profile" class="user-avatar">
+          <div class="user-info">
+            <span id="user-name-display" class="user-name">User</span>
+            <span id="user-email-display" class="user-email">email@domain.com</span>
+          </div>
+          <button class="btn-icon-logout" title="Logout" onclick="handleLogout()">⏻</button>
+        </div>
       </div>
-      <div class="action-group">
-        <button class="btn-export" onclick="exportToCSV()">📥 Export to Excel</button>
+    </nav>
+
+    <!-- Controls & Action Toolbar -->
+    <div class="toolbar-card">
+      <div class="toolbar-left">
+        <label for="monthFilter">📅 <strong>Statement Period:</strong></label>
+        <input type="month" id="monthFilter" onchange="applyFilters()">
+        <button class="btn-chip" onclick="clearMonthFilter()">Show All History</button>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn-export-glow" onclick="exportToCSV()">📥 Export Excel (CSV)</button>
       </div>
     </div>
 
-    <!-- Overview Cards -->
+    <!-- Metric Overview Cards -->
     <section class="summary-cards">
-      <div class="card total-balance">
-        <h3>Total Balance</h3>
-        <p id="total-balance-val">₹0</p>
+      <div class="metric-card card-balance">
+        <div class="metric-header">
+          <span>Net Balance</span>
+          <span class="metric-icon">💰</span>
+        </div>
+        <h2 id="total-balance-val">₹0</h2>
+        <span class="metric-footer">Current Real-time Balance</span>
       </div>
-      <div class="card total-spent">
-        <h3>Total Spent (Filtered)</h3>
-        <p id="today-spent-val">₹0</p>
+
+      <div class="metric-card card-spent">
+        <div class="metric-header">
+          <span>Total Spent</span>
+          <span class="metric-icon">📉</span>
+        </div>
+        <h2 id="today-spent-val">₹0</h2>
+        <span class="metric-footer">For Filtered Period</span>
       </div>
-      <div class="card to-receive">
-        <h3>🟢 Total Receivables (Lent)</h3>
-        <p id="total-receive-val">₹0</p>
+
+      <div class="metric-card card-receive">
+        <div class="metric-header">
+          <span>Total Receivables</span>
+          <span class="metric-icon">🟢</span>
+        </div>
+        <h2 id="total-receive-val">₹0</h2>
+        <span class="metric-footer">Lent Money (To Get Back)</span>
       </div>
-      <div class="card to-pay">
-        <h3>🔴 Total Payables (Borrowed)</h3>
-        <p id="total-pay-val">₹0</p>
+
+      <div class="metric-card card-pay">
+        <div class="metric-header">
+          <span>Total Payables</span>
+          <span class="metric-icon">🔴</span>
+        </div>
+        <h2 id="total-pay-val">₹0</h2>
+        <span class="metric-footer">Borrowed (To Return)</span>
       </div>
-      <div class="card total-emi">
-        <h3>Active EMI Burden</h3>
-        <p id="total-emi-val">₹0 /mo</p>
+
+      <div class="metric-card card-emi">
+        <div class="metric-header">
+          <span>Active EMI Burden</span>
+          <span class="metric-icon">🏦</span>
+        </div>
+        <h2 id="total-emi-val">₹0 /mo</h2>
+        <span class="metric-footer">Monthly Committed Loans</span>
       </div>
     </section>
 
-    <!-- Grid Layout -->
-    <div class="grid-layout">
+    <!-- Main Grid Workspace -->
+    <div class="workspace-grid">
       <!-- Left Column: Forms -->
-      <section class="form-section">
+      <div class="forms-column">
         <!-- Daily Transaction Form -->
-        <div class="box">
-          <h2>Add Daily Transaction</h2>
+        <div class="glass-box">
+          <div class="box-head">
+            <h3>⚡ Add Daily Transaction</h3>
+            <span class="tag-pill">Expense / Income</span>
+          </div>
           <form id="tx-form" onsubmit="addTransaction(event)">
-            <label>Date</label>
-            <input type="date" id="tx-date" required>
+            <div class="grid-2">
+              <div class="input-group">
+                <label>Date</label>
+                <input type="date" id="tx-date" required>
+              </div>
+              <div class="input-group">
+                <label>Account</label>
+                <select id="tx-account" required>
+                  <option value="HDFC Bank">HDFC Bank</option>
+                  <option value="SBI">SBI</option>
+                  <option value="Cash">Cash / Wallet</option>
+                </select>
+              </div>
+            </div>
 
-            <label>Account</label>
-            <select id="tx-account" required>
-              <option value="HDFC Bank">HDFC Bank</option>
-              <option value="SBI">SBI</option>
-              <option value="Cash">Cash / Other</option>
-            </select>
+            <div class="grid-2">
+              <div class="input-group">
+                <label>Type</label>
+                <select id="tx-type" required>
+                  <option value="Expense">Expense (-)</option>
+                  <option value="Income">Income (+)</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label>Amount (₹)</label>
+                <input type="number" id="tx-amount" placeholder="500" required>
+              </div>
+            </div>
 
-            <label>Type</label>
-            <select id="tx-type" required>
-              <option value="Expense">Expense (-)</option>
-              <option value="Income">Income (+)</option>
-            </select>
+            <div class="input-group">
+              <label>Category</label>
+              <input type="text" id="tx-category" placeholder="Fuel, Dining, Groceries, Salary..." required>
+            </div>
 
-            <label>Category</label>
-            <input type="text" id="tx-category" placeholder="Fuel, Dining, Groceries, Salary..." required>
+            <div class="input-group">
+              <label>Note / Remarks</label>
+              <input type="text" id="tx-note" placeholder="Optional notes...">
+            </div>
 
-            <label>Amount (₹)</label>
-            <input type="number" id="tx-amount" placeholder="500" required>
-
-            <label>Note / Description</label>
-            <input type="text" id="tx-note" placeholder="Optional notes...">
-
-            <button type="submit" class="btn-primary">Save Transaction</button>
+            <button type="submit" class="btn-glow-primary w-100">Save Transaction</button>
           </form>
         </div>
 
-        <!-- Receivables & Payables (Khata) Form -->
-        <div class="box">
-          <h2>Add Dues & Receivables</h2>
+        <!-- Dues & Receivables Form -->
+        <div class="glass-box">
+          <div class="box-head">
+            <h3>🤝 Dues & Receivables (Khata)</h3>
+            <span class="tag-pill color-purple">Person Ledger</span>
+          </div>
           <form id="debt-form" onsubmit="addDebt(event)">
-            <label>Transaction Date (Given / Taken Date)</label>
-            <input type="date" id="debt-date" required>
+            <div class="grid-2">
+              <div class="input-group">
+                <label>Transaction Date</label>
+                <input type="date" id="debt-date" required>
+              </div>
+              <div class="input-group">
+                <label>Person / Entity Name</label>
+                <input type="text" id="debt-person" placeholder="Friend or Client" required>
+              </div>
+            </div>
 
-            <label>Person / Entity Name</label>
-            <input type="text" id="debt-person" placeholder="Friend or Client Name" required>
+            <div class="grid-2">
+              <div class="input-group">
+                <label>Type</label>
+                <select id="debt-type" required>
+                  <option value="give">Lent / Given (Receivable 🟢)</option>
+                  <option value="take">Borrowed / Taken (Payable 🔴)</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label>Amount (₹)</label>
+                <input type="number" id="debt-amount" placeholder="2000" required>
+              </div>
+            </div>
 
-            <label>Transaction Type</label>
-            <select id="debt-type" required>
-              <option value="give">Lent / Given (Receivable 🟢)</option>
-              <option value="take">Borrowed / Taken (Payable 🔴)</option>
-            </select>
+            <div class="input-group">
+              <label>Purpose / Reason</label>
+              <input type="text" id="debt-reason" placeholder="Fuel, Travel, Rent, Dinner..." required>
+            </div>
 
-            <label>Amount (₹)</label>
-            <input type="number" id="debt-amount" placeholder="2000" required>
+            <div class="input-group">
+              <label>Remarks / Note</label>
+              <input type="text" id="debt-note" placeholder="UPI transaction ID or context...">
+            </div>
 
-            <label>Category / Purpose</label>
-            <input type="text" id="debt-reason" placeholder="Fuel, Trip, Rent, Dinner..." required>
-
-            <label>Remarks / Note</label>
-            <input type="text" id="debt-note" placeholder="UPI reference or details...">
-
-            <button type="submit" class="btn-primary" style="background: #4f46e5;">Save Ledger Entry</button>
+            <button type="submit" class="btn-glow-indigo w-100">Save Ledger Record</button>
           </form>
         </div>
 
         <!-- Loan & EMI Form -->
-        <div class="box">
-          <h2>Add Loan / EMI Record</h2>
+        <div class="glass-box">
+          <div class="box-head">
+            <h3>🏦 Add Loan / EMI Burden</h3>
+            <span class="tag-pill color-teal">Committed Dues</span>
+          </div>
           <form id="loan-form" onsubmit="addLoan(event)">
-            <label>Loan Name</label>
-            <input type="text" id="loan-name" placeholder="Vehicle Loan, Personal Loan" required>
+            <div class="input-group">
+              <label>Loan / Asset Name</label>
+              <input type="text" id="loan-name" placeholder="Bullet Classic 350, Personal Loan..." required>
+            </div>
 
-            <label>Monthly EMI (₹)</label>
-            <input type="number" id="loan-emi" placeholder="4500" required>
+            <div class="grid-2">
+              <div class="input-group">
+                <label>Monthly EMI (₹)</label>
+                <input type="number" id="loan-emi" placeholder="4500" required>
+              </div>
+              <div class="input-group">
+                <label>Remaining Principal (₹)</label>
+                <input type="number" id="loan-remaining" placeholder="85000" required>
+              </div>
+            </div>
 
-            <label>Remaining Principal (₹)</label>
-            <input type="number" id="loan-remaining" placeholder="85000" required>
+            <div class="input-group">
+              <label>Due Day of Every Month (1-31)</label>
+              <input type="number" id="loan-date" placeholder="5" min="1" max="31" required>
+            </div>
 
-            <label>Due Day of Month</label>
-            <input type="number" id="loan-date" placeholder="5" min="1" max="31" required>
-
-            <button type="submit" class="btn-secondary">Save Loan</button>
+            <button type="submit" class="btn-glow-teal w-100">Save Loan Record</button>
           </form>
         </div>
-      </section>
+      </div>
 
       <!-- Right Column: Tables -->
-      <section class="records-section">
+      <div class="tables-column">
         <!-- Daily Transaction History -->
-        <div class="box">
-          <h2>Transaction History</h2>
-          <div class="table-wrapper">
-            <table id="tx-table">
+        <div class="glass-box">
+          <div class="box-head">
+            <h3>📑 Transaction History</h3>
+            <span class="badge-count" id="tx-count-badge">0 Records</span>
+          </div>
+          <div class="table-container">
+            <table>
               <thead>
                 <tr>
                   <th>Date</th>
@@ -234,16 +371,17 @@
           </div>
         </div>
 
-        <!-- Dues & Receivables Table -->
-        <div class="box">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h2>Dues & Receivables (Ledger)</h2>
-            <div>
-              <button class="btn-clear" onclick="toggleSettledView()" id="settled-toggle-btn" style="font-size: 12px; padding: 4px 8px;">Show Settled</button>
+        <!-- Dues & Receivables (Ledger) -->
+        <div class="glass-box">
+          <div class="box-head">
+            <div class="d-flex align-center gap-10">
+              <h3>👥 Dues & Receivables (Ledger)</h3>
+              <button class="btn-mini-toggle" onclick="toggleSettledView()" id="settled-toggle-btn">Show Settled</button>
             </div>
+            <span class="badge-count color-purple" id="debt-count-badge">0 People</span>
           </div>
-          <div class="table-wrapper">
-            <table id="debt-table">
+          <div class="table-container">
+            <table>
               <thead>
                 <tr>
                   <th>Date</th>
@@ -251,7 +389,7 @@
                   <th>Type</th>
                   <th>Purpose</th>
                   <th>Amount</th>
-                  <th>Action</th>
+                  <th>Action / PDF</th>
                 </tr>
               </thead>
               <tbody id="debt-list"></tbody>
@@ -259,14 +397,17 @@
           </div>
         </div>
 
-        <!-- Active Loans Table -->
-        <div class="box">
-          <h2>Active Loans & EMIs</h2>
-          <div class="table-wrapper">
-            <table id="loan-table">
+        <!-- Active Loans -->
+        <div class="glass-box">
+          <div class="box-head">
+            <h3>💳 Active Loans & EMIs</h3>
+            <span class="badge-count color-teal" id="loan-count-badge">0 Loans</span>
+          </div>
+          <div class="table-container">
+            <table>
               <thead>
                 <tr>
-                  <th>Loan</th>
+                  <th>Loan Name</th>
                   <th>Monthly EMI</th>
                   <th>Remaining</th>
                   <th>Due Day</th>
@@ -277,10 +418,69 @@
             </table>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+
+    <!-- App Creator Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <div class="footer-logo">APEX FINANCE</div>
+        <p>Your ultimate personal wealth management & ledger ecosystem.</p>
+      </div>
+      <div class="footer-right">
+        <div class="creator-badge-box">
+          <span>Crafted with ⚡ & Passion by</span>
+          <strong>SANDEEP CHOUDHARY</strong>
+          <small>Automotive Tech & Software Engineer</small>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Floating AI Sandy Assistant Button -->
+  <button class="btn-floating-ai-sandy" onclick="openAISandyModal()" title="Ask AI Sandy">
+    <div class="ai-avatar-pulse">
+      🤖
+    </div>
+    <span class="ai-label">AI Sandy</span>
+  </button>
+
+  <!-- AI Sandy Smart Assistant Modal -->
+  <div id="ai-sandy-modal" class="overlay hidden">
+    <div class="ai-chat-card">
+      <div class="ai-card-header">
+        <div class="ai-profile">
+          <div class="ai-robot-icon">🤖</div>
+          <div>
+            <h3>AI Sandy <span class="ai-tag">Gemini Powered</span></h3>
+            <small>Personal Finance & App Assistant</small>
+          </div>
+        </div>
+        <button class="btn-close-modal" onclick="closeAISandyModal()">✕</button>
+      </div>
+
+      <div class="ai-chat-body" id="ai-chat-body">
+        <div class="ai-message bot">
+          <strong>AI Sandy:</strong>
+          <p>Namaste! I'm <strong>AI Sandy</strong>, your personal AI assistant. How can I help you manage your finances, generate PDF receipts, or solve questions about this app?</p>
+        </div>
+      </div>
+
+      <!-- Quick AI Chips -->
+      <div class="ai-quick-chips">
+        <button onclick="sendQuickPrompt('How do I generate a PDF statement for my friend?')">📄 PDF Statement Help</button>
+        <button onclick="sendQuickPrompt('How does the Dues & Receivables (Khata) work?')">🤝 Explain Khata Ledger</button>
+        <button onclick="sendQuickPrompt('Give me 3 smart tips to save fuel and manage monthly EMI.')">💡 Budgeting Tips</button>
+        <button onclick="sendQuickPrompt('How to export monthly expense report to Excel?')">📥 Excel Export Guide</button>
+      </div>
+
+      <div class="ai-input-bar">
+        <input type="text" id="ai-user-query" placeholder="Ask AI Sandy anything about your expenses..." onkeypress="handleAIAssistantKey(event)">
+        <button class="btn-ai-send" onclick="sendQueryToAISandy()">Ask</button>
+      </div>
     </div>
   </div>
 
-  <script src="script.js?v=7"></script>
+  <script src="script.js?v=8"></script>
 </body>
 </html>

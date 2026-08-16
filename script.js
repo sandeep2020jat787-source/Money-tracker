@@ -1,9 +1,10 @@
-// Database Configuration
+// Supabase Configuration
 var SUPABASE_URL = "https://vewtbsdpwtbuzmpthrpl.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZld3Ric2Rwd3RidXptcHRocnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4NTYwNDUsImV4cCI6MjEwMjQzMjA0NX0.uDcxgjnox3X7wXXyn-TaCYb-7miIWr8w_ak3hgLgozY";
 
 var dbClient = null;
 var currentUser = null;
+var userProfile = null;
 var isSignUpMode = false;
 
 var transactions = [];
@@ -11,7 +12,7 @@ var loans = [];
 var debts = [];
 var showSettled = false;
 
-// Initialize Supabase & Session Check
+// Initialize Supabase Client
 try {
   if (window.supabase) {
     dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -21,10 +22,10 @@ try {
   console.error("Init Error:", e);
 }
 
-// Session Check on Page Load & Password Reset Listener
+// Session Check on Load
 async function checkCurrentSession() {
   if (!dbClient) return;
-  
+
   dbClient.auth.onAuthStateChange(function(event, session) {
     if (event === "PASSWORD_RECOVERY") {
       document.getElementById("auth-overlay").classList.remove("hidden");
@@ -37,7 +38,35 @@ async function checkCurrentSession() {
   var { data } = await dbClient.auth.getSession();
   if (data && data.session && data.session.user) {
     currentUser = data.session.user;
+    await fetchUserProfile();
     launchDashboard();
+  }
+}
+
+// Fetch Profile from DB or Metadata
+async function fetchUserProfile() {
+  if (!dbClient || !currentUser) return;
+
+  var { data, error } = await dbClient.from("profiles").select("*").eq("id", currentUser.id).single();
+  if (data) {
+    userProfile = data;
+  } else {
+    // Fallback to user metadata
+    var meta = currentUser.user_metadata || {};
+    userProfile = {
+      full_name: meta.full_name || currentUser.email.split("@")[0],
+      dob: meta.dob || "—",
+      avatar_url: meta.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + currentUser.email
+    };
+  }
+}
+
+// Avatar Preview on Signup
+function previewAvatar() {
+  var avatarSelect = document.getElementById("signup-avatar");
+  var previewImg = document.getElementById("avatar-preview-img");
+  if (avatarSelect && previewImg) {
+    previewImg.src = avatarSelect.value;
   }
 }
 
@@ -45,27 +74,33 @@ async function checkCurrentSession() {
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   var title = document.getElementById("auth-title");
+  var subText = document.getElementById("auth-sub-text");
   var submitBtn = document.getElementById("auth-submit-btn");
   var toggleText = document.getElementById("auth-toggle-text");
   var toggleLink = document.getElementById("auth-toggle-link");
+  var extraFields = document.getElementById("signup-extra-fields");
   var errorMsg = document.getElementById("auth-error");
 
   errorMsg.innerText = "";
 
   if (isSignUpMode) {
     title.innerText = "Create New Account";
+    subText.innerText = "Join Apex Finance & manage your cashflow seamlessly";
     submitBtn.innerText = "Sign Up";
     toggleText.innerText = "Already have an account?";
-    toggleLink.innerText = "Login";
+    toggleLink.innerText = "Sign In";
+    extraFields.classList.remove("hidden");
   } else {
-    title.innerText = "Login to Account";
-    submitBtn.innerText = "Login";
+    title.innerText = "Welcome Back";
+    subText.innerText = "Enter your credentials to access your personal dashboard";
+    submitBtn.innerText = "Sign In";
     toggleText.innerText = "Don't have an account?";
-    toggleLink.innerText = "Sign Up";
+    toggleLink.innerText = "Create Account";
+    extraFields.classList.add("hidden");
   }
 }
 
-// Auth Submission Handler (Login / Sign Up)
+// Auth Submission Handler
 async function handleAuth() {
   var email = document.getElementById("auth-email").value.trim();
   var password = document.getElementById("auth-password").value.trim();
@@ -77,25 +112,54 @@ async function handleAuth() {
   }
 
   if (isSignUpMode) {
-    var res = await dbClient.auth.signUp({ email: email, password: password });
+    var fullName = document.getElementById("signup-fullname").value.trim() || email.split("@")[0];
+    var dob = document.getElementById("signup-dob").value || "";
+    var avatarUrl = document.getElementById("signup-avatar").value;
+
+    var res = await dbClient.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          full_name: fullName,
+          dob: dob,
+          avatar_url: avatarUrl
+        }
+      }
+    });
+
     if (res.error) {
       errorMsg.innerText = res.error.message;
-    } else {
-      currentUser = res.data.user;
-      launchDashboard();
+      return;
     }
+
+    currentUser = res.data.user;
+
+    // Insert into profiles table
+    if (currentUser) {
+      await dbClient.from("profiles").upsert({
+        id: currentUser.id,
+        full_name: fullName,
+        dob: dob,
+        avatar_url: avatarUrl
+      });
+    }
+
+    await fetchUserProfile();
+    launchDashboard();
   } else {
     var res = await dbClient.auth.signInWithPassword({ email: email, password: password });
     if (res.error) {
       errorMsg.innerText = res.error.message;
     } else {
       currentUser = res.data.user;
+      await fetchUserProfile();
       launchDashboard();
     }
   }
 }
 
-// Forgot Password Modal Controls
+// Forgot Password Flow
 function openForgotPasswordModal() {
   document.getElementById("auth-main-box").classList.add("hidden");
   document.getElementById("auth-forgot-box").classList.remove("hidden");
@@ -108,18 +172,16 @@ function closeForgotPasswordModal() {
   document.getElementById("forgot-msg").innerText = "";
 }
 
-// Send Recovery Email with 60-Minute Protection Check
 async function sendPasswordResetEmail() {
   var email = document.getElementById("forgot-email-input").value.trim();
   var msg = document.getElementById("forgot-msg");
 
   if (!email) {
-    msg.style.color = "#dc2626";
+    msg.style.color = "#f87171";
     msg.innerText = "Please enter your email.";
     return;
   }
 
-  // 60-minute cooldown check
   var lastSentKey = "last_reset_sent_" + email.toLowerCase();
   var lastSentTime = localStorage.getItem(lastSentKey);
   var now = Date.now();
@@ -128,39 +190,35 @@ async function sendPasswordResetEmail() {
     var diffMinutes = Math.floor((now - parseInt(lastSentTime, 10)) / (1000 * 60));
     if (diffMinutes < 60) {
       var remaining = 60 - diffMinutes;
-      msg.style.color = "#dc2626";
-      msg.innerText = "You can only request password reset once in 60 min. Please try again after " + remaining + " minute(s).";
+      msg.style.color = "#f87171";
+      msg.innerText = "You can only request password reset once in 60 min. Try again in " + remaining + " minute(s).";
       return;
     }
   }
 
   var currentUrl = window.location.href.split("#")[0];
-  var res = await dbClient.auth.resetPasswordForEmail(email, {
-    redirectTo: currentUrl
-  });
+  var res = await dbClient.auth.resetPasswordForEmail(email, { redirectTo: currentUrl });
 
   if (res.error) {
-    msg.style.color = "#dc2626";
+    msg.style.color = "#f87171";
     msg.innerText = res.error.message;
   } else {
     localStorage.setItem(lastSentKey, now.toString());
-    msg.style.color = "#16a34a";
+    msg.style.color = "#4ade80";
     msg.innerText = "Recovery email sent! Check your Inbox / Spam folder.";
   }
 }
 
-// Update Password with 60-Minute Cooldown Check
 async function updateNewPassword() {
   var newPass = document.getElementById("new-password-input").value.trim();
   var msg = document.getElementById("new-pass-msg");
 
   if (newPass.length < 6) {
-    msg.style.color = "#dc2626";
+    msg.style.color = "#f87171";
     msg.innerText = "Password must be at least 6 characters.";
     return;
   }
 
-  // 60-minute cooldown check on changing
   var lastChangedTime = localStorage.getItem("last_password_changed_time");
   var now = Date.now();
 
@@ -168,8 +226,8 @@ async function updateNewPassword() {
     var diffMinutes = Math.floor((now - parseInt(lastChangedTime, 10)) / (1000 * 60));
     if (diffMinutes < 60) {
       var remaining = 60 - diffMinutes;
-      msg.style.color = "#dc2626";
-      msg.innerText = "Password can only be changed once in 60 min. Please try after " + remaining + " minute(s).";
+      msg.style.color = "#f87171";
+      msg.innerText = "Password can only be changed once in 60 min. Try after " + remaining + " min.";
       return;
     }
   }
@@ -177,12 +235,12 @@ async function updateNewPassword() {
   var res = await dbClient.auth.updateUser({ password: newPass });
 
   if (res.error) {
-    msg.style.color = "#dc2626";
+    msg.style.color = "#f87171";
     msg.innerText = res.error.message;
   } else {
     localStorage.setItem("last_password_changed_time", now.toString());
-    msg.style.color = "#16a34a";
-    msg.innerText = "Password updated successfully! Redirecting to login...";
+    msg.style.color = "#4ade80";
+    msg.innerText = "Password updated successfully! Redirecting...";
     setTimeout(function() {
       document.getElementById("auth-new-pass-box").classList.add("hidden");
       document.getElementById("auth-main-box").classList.remove("hidden");
@@ -193,10 +251,9 @@ async function updateNewPassword() {
 
 // Logout Handler
 async function handleLogout() {
-  if (dbClient) {
-    await dbClient.auth.signOut();
-  }
+  if (dbClient) await dbClient.auth.signOut();
   currentUser = null;
+  userProfile = null;
   document.getElementById("app-container").classList.add("hidden");
   document.getElementById("auth-overlay").classList.remove("hidden");
   document.getElementById("auth-main-box").classList.remove("hidden");
@@ -206,14 +263,20 @@ async function handleLogout() {
   document.getElementById("auth-password").value = "";
 }
 
-// Launch Dashboard After Login
+// Launch Dashboard
 async function launchDashboard() {
   document.getElementById("auth-overlay").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
 
-  var userDisplay = document.getElementById("user-display");
-  if (userDisplay && currentUser) {
-    userDisplay.innerText = "Logged in as: " + currentUser.email;
+  // Populate User Profile Header
+  if (userProfile && currentUser) {
+    var nameEl = document.getElementById("user-name-display");
+    var emailEl = document.getElementById("user-email-display");
+    var avatarEl = document.getElementById("user-avatar-img");
+
+    if (nameEl) nameEl.innerText = userProfile.full_name || "Sandeep User";
+    if (emailEl) emailEl.innerText = currentUser.email;
+    if (avatarEl) avatarEl.src = userProfile.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=Sandy";
   }
 
   var todayStr = new Date().toISOString().split("T")[0];
@@ -230,7 +293,7 @@ async function launchDashboard() {
   await loadDataFromSupabase();
 }
 
-// Load Authenticated User Data
+// Load User Data
 async function loadDataFromSupabase() {
   if (!dbClient || !currentUser) return;
 
@@ -277,7 +340,7 @@ async function addTransaction(e) {
   await loadDataFromSupabase();
 }
 
-// Add Debt / Receivable Entry
+// Add Debt / Khata Entry
 async function addDebt(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -326,7 +389,7 @@ async function addLoan(e) {
   await loadDataFromSupabase();
 }
 
-// Action Handlers
+// Actions
 async function toggleSettleDebt(id, currentStatus) {
   if (dbClient) {
     await dbClient.from("debts").update({ is_settled: !currentStatus }).eq("id", id);
@@ -337,12 +400,12 @@ async function toggleSettleDebt(id, currentStatus) {
 async function deleteTransaction(id) {
   if (dbClient) {
     await dbClient.from("transactions").delete().eq("id", id);
+    await loadDataFromSupabase();
   }
-  await loadDataFromSupabase();
 }
 
 async function deleteDebt(id) {
-  if (confirm("Delete this record permanently?")) {
+  if (confirm("Delete this ledger entry permanently?")) {
     if (dbClient) {
       await dbClient.from("debts").delete().eq("id", id);
       await loadDataFromSupabase();
@@ -353,8 +416,8 @@ async function deleteDebt(id) {
 async function deleteLoan(id) {
   if (dbClient) {
     await dbClient.from("loans").delete().eq("id", id);
+    await loadDataFromSupabase();
   }
-  await loadDataFromSupabase();
 }
 
 function toggleSettledView() {
@@ -363,7 +426,7 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
-// Consolidated Person Statement PDF
+// Professional Consolidated Person PDF
 function generatePersonStatementPDF(targetPersonName) {
   var personRecords = debts.filter(function(d) {
     return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase() && !d.is_settled;
@@ -396,7 +459,7 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFont("helvetica", "normal");
   doc.text("Statement Date: " + new Date().toLocaleDateString('en-IN'), 14, 40);
   doc.text("Statement For: " + targetPersonName, 14, 46);
-  doc.text("Account Owner: " + (currentUser ? currentUser.email : "Self"), 14, 52);
+  doc.text("Account Created By: " + (userProfile ? userProfile.full_name : "Sandeep User"), 14, 52);
 
   var totalLent = 0;
   var totalBorrowed = 0;
@@ -471,7 +534,7 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFontSize(9);
   doc.setTextColor(140, 140, 140);
   doc.setFont("helvetica", "italic");
-  doc.text("This is an electronically generated statement of record.", 14, finalY + 45);
+  doc.text("Generated by Apex Finance | Crafted with Passion by Sandeep Choudhary", 14, finalY + 45);
 
   var safeName = targetPersonName.replace(/[^a-zA-Z0-9]/g, "_");
   doc.save("Statement_" + safeName + ".pdf");
@@ -567,6 +630,8 @@ function filterTransactions() {
 function renderTransactionTable(dataToRender) {
   var data = dataToRender || transactions;
   var txList = document.getElementById("tx-list");
+  var badge = document.getElementById("tx-count-badge");
+  if (badge) badge.innerText = data.length + " Records";
   if (!txList) return;
   txList.innerHTML = "";
 
@@ -574,7 +639,7 @@ function renderTransactionTable(dataToRender) {
     var row = document.createElement("tr");
     row.innerHTML =
       "<td>" + t.date + "</td>" +
-      "<td><strong>" + t.category + "</strong><br><small>" + (t.note || "") + "</small></td>" +
+      "<td><strong>" + t.category + "</strong><br><small style='color:#94a3b8;'>" + (t.note || "") + "</small></td>" +
       "<td>" + t.account + "</td>" +
       '<td class="' + (t.type === "Expense" ? "badge-expense" : "badge-income") + '">' + t.type + "</td>" +
       "<td>₹" + parseFloat(t.amount).toLocaleString() + "</td>" +
@@ -585,6 +650,7 @@ function renderTransactionTable(dataToRender) {
 
 function renderDebtTable() {
   var debtList = document.getElementById("debt-list");
+  var badge = document.getElementById("debt-count-badge");
   if (!debtList) return;
   debtList.innerHTML = "";
 
@@ -592,8 +658,10 @@ function renderDebtTable() {
     return showSettled ? true : !d.is_settled;
   });
 
+  if (badge) badge.innerText = filteredDebts.length + " People";
+
   if (filteredDebts.length === 0) {
-    debtList.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888;">No active records found</td></tr>';
+    debtList.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b;">No active ledger records</td></tr>';
     return;
   }
 
@@ -609,7 +677,7 @@ function renderDebtTable() {
     var row = document.createElement("tr");
     row.innerHTML =
       "<td>" + (d.due_date || "—") + "</td>" +
-      "<td><strong>" + d.person_name + "</strong><br><small>" + (d.note || "") + "</small></td>" +
+      "<td><strong>" + d.person_name + "</strong><br><small style='color:#94a3b8;'>" + (d.note || "") + "</small></td>" +
       "<td>" + typeBadge + "</td>" +
       "<td>" + d.reason + "</td>" +
       "<td>₹" + parseFloat(d.amount).toLocaleString() + "</td>" +
@@ -624,6 +692,8 @@ function renderDebtTable() {
 
 function renderLoanTable() {
   var loanList = document.getElementById("loan-list");
+  var badge = document.getElementById("loan-count-badge");
+  if (badge) badge.innerText = loans.length + " Loans";
   if (!loanList) return;
   loanList.innerHTML = "";
 
@@ -643,7 +713,7 @@ function renderAll() {
   applyFilters();
 }
 
-// Mobile CSV Export
+// Export CSV
 function exportToCSV() {
   var selectedMonth = document.getElementById("monthFilter").value;
   var dataToExport = transactions;
@@ -690,4 +760,87 @@ function exportToCSV() {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// -------------------------------------------------------------
+// 🤖 AI SANDY (Gemini Smart Knowledge Engine)
+// -------------------------------------------------------------
+
+function openAISandyModal() {
+  document.getElementById("ai-sandy-modal").classList.remove("hidden");
+}
+
+function closeAISandyModal() {
+  document.getElementById("ai-sandy-modal").classList.add("hidden");
+}
+
+function handleAIAssistantKey(e) {
+  if (e.key === "Enter") sendQueryToAISandy();
+}
+
+function sendQuickPrompt(promptText) {
+  var input = document.getElementById("ai-user-query");
+  if (input) input.value = promptText;
+  sendQueryToAISandy();
+}
+
+function sendQueryToAISandy() {
+  var input = document.getElementById("ai-user-query");
+  var query = input.value.trim();
+  if (!query) return;
+
+  var chatBody = document.getElementById("ai-chat-body");
+
+  // Append User message
+  var userDiv = document.createElement("div");
+  userDiv.className = "ai-message user";
+  userDiv.innerHTML = "<strong>You:</strong><p>" + query + "</p>";
+  chatBody.appendChild(userDiv);
+  input.value = "";
+
+  chatBody.scrollTop = chatBody.scrollHeight;
+
+  // Generate Smart Contextual Response
+  setTimeout(function() {
+    var response = generateAISandyResponse(query);
+    var botDiv = document.createElement("div");
+    botDiv.className = "ai-message bot";
+    botDiv.innerHTML = "<strong>AI Sandy:</strong><p>" + response + "</p>";
+    chatBody.appendChild(botDiv);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }, 600);
+}
+
+function generateAISandyResponse(q) {
+  var lower = q.toLowerCase();
+
+  if (lower.includes("pdf") || lower.includes("statement") || lower.includes("share")) {
+    return "To generate a PDF statement for anyone: Go to <strong>Dues & Receivables (Ledger)</strong> on the right side. Find the person's name and click the <strong>📄 PDF</strong> button. It will calculate all given & borrowed amounts, subtract them, and download an official itemized PDF statement ready to share on WhatsApp!";
+  }
+
+  if (lower.includes("khata") || lower.includes("due") || lower.includes("receivable") || lower.includes("lent") || lower.includes("borrow")) {
+    return "The <strong>Dues & Receivables (Khata)</strong> section lets you record when you give money (Receivable 🟢) or borrow money (Payable 🔴). It tracks multiple entries for the same person and net-balances them automatically!";
+  }
+
+  if (lower.includes("excel") || lower.includes("csv") || lower.includes("export") || lower.includes("download")) {
+    return "Click the green <strong>📥 Export Excel (CSV)</strong> button at the top right toolbar. If you selected a specific month in the Statement Period filter, it will export only that month; otherwise, it exports your entire lifetime history.";
+  }
+
+  if (lower.includes("loan") || lower.includes("emi") || lower.includes("burden")) {
+    return "Use the <strong>🏦 Add Loan / EMI Burden</strong> form on the left. Enter the loan title (e.g., Bike EMI, Car, Home), monthly installment, and total remaining principal. Your monthly committed outflow will reflect in the top summary badge.";
+  }
+
+  if (lower.includes("password") || lower.includes("reset") || lower.includes("forgot") || lower.includes("login")) {
+    return "If you forget your password, click 'Forgot Password?' on the login screen. You will receive an instant recovery link on your email. For maximum security, password resets are restricted to once every 60 minutes.";
+  }
+
+  if (lower.includes("tip") || lower.includes("save") || lower.includes("budget") || lower.includes("fuel")) {
+    return "💡 <strong>Smart Financial Advice:</strong><br>1. Follow the 50/30/20 rule (50% essentials, 30% lifestyle/fuel, 20% savings/investments).<br>2. Clear high-interest short-term debt first before non-essential purchases.<br>3. Review your monthly export report on the 1st of every month to track unwanted dining & impulse spending.";
+  }
+
+  if (lower.includes("creator") || lower.includes("who made") || lower.includes("sandeep") || lower.includes("developer")) {
+    return "Apex Finance is proudly designed and built by <strong>Sandeep Choudhary</strong>, an Automotive Tech & Software Engineer, passionate about building smart personal software.";
+  }
+
+  return "I'm always here to assist you with Apex Finance! You can ask me how to manage daily transactions, generate borrower PDF statements, filter monthly statements, or calculate loan EMIs.";
 }
