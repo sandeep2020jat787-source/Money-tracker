@@ -5,104 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Personal Finance Tracker</title>
   
-  <!-- Yeh line hona sabse zaroori hai -->
+  <!-- Supabase CDN Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Password Protection Screen -->
- <!-- Login Screen with Forgot PIN Option -->
-<div id="auth-overlay" class="overlay">
-  <div class="auth-box">
-    <h2>Enter Security PIN</h2>
-    <input type="password" id="pin-input" placeholder="Enter PIN" inputmode="numeric">
-    <button class="btn-primary" onclick="unlockApp()">Unlock</button>
-    <p id="pin-error" class="error-msg"></p>
-    
-    <div style="margin-top: 15px;">
-      <a href="javascript:void(0)" onclick="openForgotModal()" style="color: #2563eb; font-size: 13px; text-decoration: none;">Forgot PIN?</a>
+  <!-- Security PIN Screen -->
+  <div id="auth-overlay" class="overlay">
+    <div class="auth-box">
+      <h2>Enter Security PIN</h2>
+      <input type="password" id="pin-input" placeholder="Enter PIN" inputmode="numeric">
+      <button class="btn-primary" onclick="unlockApp()">Unlock</button>
+      <p id="pin-error" class="error-msg"></p>
+      
+      <div style="margin-top: 15px;">
+        <a href="javascript:void(0)" onclick="openForgotModal()" style="color: #2563eb; font-size: 13px; text-decoration: none;">Forgot PIN?</a>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Forgot / Reset PIN Modal -->
-<div id="forgot-modal" class="overlay hidden">
-  <div class="auth-box">
-    <h2>Reset Security PIN</h2>
-    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Enter your registered Recovery Phone Number</p>
-    <input type="tel" id="recovery-phone-input" placeholder="Enter Mobile Number">
-    <input type="password" id="reset-new-pin" placeholder="Enter New 4-digit PIN" inputmode="numeric">
-    
-    <div class="modal-buttons">
-      <button class="btn-primary" onclick="processPinReset()">Reset & Save PIN</button>
-      <button class="btn-del" onclick="closeForgotModal()">Cancel</button>
+  <!-- Forgot PIN Modal -->
+  <div id="forgot-modal" class="overlay hidden">
+    <div class="auth-box">
+      <h2>Reset Security PIN</h2>
+      <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Enter your registered Recovery Phone Number</p>
+      <input type="tel" id="recovery-phone-input" placeholder="Enter Mobile Number">
+      <input type="password" id="reset-new-pin" placeholder="Enter New 4-digit PIN" inputmode="numeric">
+      
+      <div class="modal-buttons">
+        <button class="btn-primary" onclick="processPinReset()">Reset PIN</button>
+        <button class="btn-del" onclick="closeForgotModal()">Cancel</button>
+      </div>
+      <p id="forgot-modal-msg" class="error-msg"></p>
     </div>
-    <p id="forgot-modal-msg" class="error-msg"></p>
   </div>
-</div>
 
-<!-- Change PIN & Recovery Phone Modal (Inside Dashboard) -->
-<div id="pin-modal" class="overlay hidden">
-  <div class="auth-box">
-    <h2>Security Settings</h2>
-    <input type="password" id="current-pin" placeholder="Current PIN" inputmode="numeric">
-    <input type="password" id="new-pin" placeholder="New PIN (4 digits)" inputmode="numeric">
-    <input type="tel" id="new-phone" placeholder="Update Recovery Mobile No.">
-    
-    <div class="modal-buttons">
-      <button class="btn-primary" onclick="saveNewSecurityDetails()">Save Changes</button>
-      <button class="btn-del" onclick="closePinModal()">Cancel</button>
-    </div>
-    <p id="pin-modal-msg" class="error-msg"></p>
-  </div>
-</div>
-
-  <!-- Main App -->
+  <!-- Main Application Container -->
   <div id="app-container" class="container hidden">
     <header>
-        <!-- Search & Filter Bar with Export and PIN Settings -->
-<div class="controls-bar">
-  <div class="filter-group">
-    <label for="monthFilter">Filter Month:</label>
-    <input type="month" id="monthFilter" onchange="applyFilters()">
-    <button class="btn-clear" onclick="clearMonthFilter()">Show All</button>
-  </div>
-  <div class="action-group">
-    <button class="btn-export" onclick="exportToCSV()">📥 Export to Excel (CSV)</button>
-    <button class="btn-settings" onclick="openPinModal()">⚙️ Change PIN</button>
-  </div>
-</div>
-
-<!-- Change PIN Modal -->
-<div id="pin-modal" class="overlay hidden">
-  <div class="auth-box">
-    <h2>Change Security PIN</h2>
-    <input type="password" id="current-pin" placeholder="Current PIN">
-    <input type="password" id="new-pin" placeholder="New PIN (min 4 digits)">
-    <div class="modal-buttons">
-      <button class="btn-primary" onclick="saveNewPin()">Update PIN</button>
-      <button class="btn-del" onclick="closePinModal()">Cancel</button>
-    </div>
-    <p id="pin-modal-msg" class="error-msg"></p>
-  </div>
-</div>
-      <h1>My Money Tracker</h1>
+      <h1>Personal Finance Tracker</h1>
       <div class="search-bar">
-        <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search transactions, categories, accounts...">
+        <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search transactions, categories, names...">
       </div>
     </header>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <div class="filter-group">
+        <label for="monthFilter"><strong>Filter Month:</strong></label>
+        <input type="month" id="monthFilter" onchange="applyFilters()">
+        <button class="btn-clear" onclick="clearMonthFilter()">Show All</button>
+      </div>
+      <div class="action-group">
+        <button class="btn-export" onclick="exportToCSV()">📥 Export to Excel</button>
+        <button class="btn-settings" onclick="openPinModal()">⚙️ Security Settings</button>
+      </div>
+    </div>
 
     <!-- Overview Cards -->
     <section class="summary-cards">
       <div class="card total-balance">
-        <h3>Total Bank Balance</h3>
+        <h3>Total Balance</h3>
         <p id="total-balance-val">₹0</p>
       </div>
       <div class="card total-spent">
-        <h3>Total Spent Today</h3>
+        <h3>Total Spent (Filtered)</h3>
         <p id="today-spent-val">₹0</p>
+      </div>
+      <div class="card to-receive">
+        <h3>🟢 Total Receivables (Lent)</h3>
+        <p id="total-receive-val">₹0</p>
+      </div>
+      <div class="card to-pay">
+        <h3>🔴 Total Payables (Borrowed)</h3>
+        <p id="total-pay-val">₹0</p>
       </div>
       <div class="card total-emi">
         <h3>Active EMI Burden</h3>
@@ -110,10 +88,11 @@
       </div>
     </section>
 
+    <!-- Grid Layout -->
     <div class="grid-layout">
       <!-- Left Column: Forms -->
       <section class="form-section">
-        <!-- Daily Expense Entry Form -->
+        <!-- Daily Transaction Form -->
         <div class="box">
           <h2>Add Daily Transaction</h2>
           <form id="tx-form" onsubmit="addTransaction(event)">
@@ -134,24 +113,53 @@
             </select>
 
             <label>Category</label>
-            <input type="text" id="tx-category" placeholder="Food, Fuel, Grocery..." required>
+            <input type="text" id="tx-category" placeholder="Fuel, Dining, Groceries, Salary..." required>
 
             <label>Amount (₹)</label>
             <input type="number" id="tx-amount" placeholder="500" required>
 
             <label>Note / Description</label>
-            <input type="text" id="tx-note" placeholder="Dinner with friends...">
+            <input type="text" id="tx-note" placeholder="Optional notes...">
 
-            <button type="submit" class="btn-primary">Add Entry</button>
+            <button type="submit" class="btn-primary">Save Transaction</button>
           </form>
         </div>
 
-        <!-- Loan & EMI Section -->
+        <!-- Receivables & Payables (Khata) Form -->
+        <div class="box">
+          <h2>Add Dues & Receivables</h2>
+          <form id="debt-form" onsubmit="addDebt(event)">
+            <label>Person / Entity Name</label>
+            <input type="text" id="debt-person" placeholder="Friend or Client Name" required>
+
+            <label>Transaction Type</label>
+            <select id="debt-type" required>
+              <option value="give">Lent / Given (Receivable 🟢)</option>
+              <option value="take">Borrowed / Taken (Payable 🔴)</option>
+            </select>
+
+            <label>Amount (₹)</label>
+            <input type="number" id="debt-amount" placeholder="2000" required>
+
+            <label>Category / Purpose</label>
+            <input type="text" id="debt-reason" placeholder="Fuel, Trip, Rent, Dinner..." required>
+
+            <label>Due / Expected Date (Optional)</label>
+            <input type="date" id="debt-date">
+
+            <label>Remarks / Note</label>
+            <input type="text" id="debt-note" placeholder="UPI reference or details...">
+
+            <button type="submit" class="btn-primary" style="background: #4f46e5;">Save Ledger Entry</button>
+          </form>
+        </div>
+
+        <!-- Loan & EMI Form -->
         <div class="box">
           <h2>Add Loan / EMI Record</h2>
           <form id="loan-form" onsubmit="addLoan(event)">
             <label>Loan Name</label>
-            <input type="text" id="loan-name" placeholder="Bike Loan, Personal Loan" required>
+            <input type="text" id="loan-name" placeholder="Vehicle Loan, Personal Loan" required>
 
             <label>Monthly EMI (₹)</label>
             <input type="number" id="loan-emi" placeholder="4500" required>
@@ -159,7 +167,7 @@
             <label>Remaining Principal (₹)</label>
             <input type="number" id="loan-remaining" placeholder="85000" required>
 
-            <label>Due Date of Month</label>
+            <label>Due Day of Month</label>
             <input type="number" id="loan-date" placeholder="5" min="1" max="31" required>
 
             <button type="submit" class="btn-secondary">Save Loan</button>
@@ -167,7 +175,7 @@
         </div>
       </section>
 
-      <!-- Right Column: Tables & Lists -->
+      <!-- Right Column: Tables -->
       <section class="records-section">
         <!-- Daily Transaction History -->
         <div class="box">
@@ -189,6 +197,31 @@
           </div>
         </div>
 
+        <!-- Dues & Receivables Table -->
+        <div class="box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2>Dues & Receivables (Ledger)</h2>
+            <div>
+              <button class="btn-clear" onclick="toggleSettledView()" id="settled-toggle-btn" style="font-size: 12px; padding: 4px 8px;">Show Settled</button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table id="debt-table">
+              <thead>
+                <tr>
+                  <th>Person</th>
+                  <th>Type</th>
+                  <th>Purpose</th>
+                  <th>Amount</th>
+                  <th>Due Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="debt-list"></tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Active Loans Table -->
         <div class="box">
           <h2>Active Loans & EMIs</h2>
@@ -199,7 +232,7 @@
                   <th>Loan</th>
                   <th>Monthly EMI</th>
                   <th>Remaining</th>
-                  <th>Due Date</th>
+                  <th>Due Day</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -211,6 +244,22 @@
     </div>
   </div>
 
- <script src="script.js?v=2"></script>
+  <!-- Security Settings Modal -->
+  <div id="pin-modal" class="overlay hidden">
+    <div class="auth-box">
+      <h2>Security Settings</h2>
+      <input type="password" id="current-pin" placeholder="Current PIN" inputmode="numeric">
+      <input type="password" id="new-pin" placeholder="New PIN (4 digits)" inputmode="numeric">
+      <input type="tel" id="new-phone" placeholder="Update Recovery Mobile No.">
+      
+      <div class="modal-buttons">
+        <button class="btn-primary" onclick="saveNewSecurityDetails()">Save Changes</button>
+        <button class="btn-del" onclick="closePinModal()">Cancel</button>
+      </div>
+      <p id="pin-modal-msg" class="error-msg"></p>
+    </div>
+  </div>
+
+  <script src="script.js?v=3"></script>
 </body>
 </html>
