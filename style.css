@@ -250,6 +250,7 @@ input:focus, select:focus {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .creator-tag-info {
@@ -327,6 +328,7 @@ input:focus, select:focus {
   height: 18px;
   border-radius: 50%;
   object-fit: cover;
+  display: block;
 }
 
 .developer-pill span {
@@ -701,6 +703,7 @@ th {
   object-fit: cover;
   border: 2px solid #60a5fa;
   background: #1e293b;
+  display: block;
 }
 
 .creator-meta-text {
