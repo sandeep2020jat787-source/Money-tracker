@@ -6,6 +6,7 @@ var dbClient = null;
 var currentUser = null;
 var userProfile = null;
 var isSignUpMode = false;
+var uploadedPhotoBase64 = null;
 
 var transactions = [];
 var loans = [];
@@ -43,15 +44,14 @@ async function checkCurrentSession() {
   }
 }
 
-// Fetch Profile from DB or Metadata
+// Fetch Profile from DB
 async function fetchUserProfile() {
   if (!dbClient || !currentUser) return;
 
-  var { data, error } = await dbClient.from("profiles").select("*").eq("id", currentUser.id).single();
+  var { data } = await dbClient.from("profiles").select("*").eq("id", currentUser.id).single();
   if (data) {
     userProfile = data;
   } else {
-    // Fallback to user metadata
     var meta = currentUser.user_metadata || {};
     userProfile = {
       full_name: meta.full_name || currentUser.email.split("@")[0],
@@ -61,13 +61,45 @@ async function fetchUserProfile() {
   }
 }
 
-// Avatar Preview on Signup
-function previewAvatar() {
-  var avatarSelect = document.getElementById("signup-avatar");
-  var previewImg = document.getElementById("avatar-preview-img");
-  if (avatarSelect && previewImg) {
-    previewImg.src = avatarSelect.value;
-  }
+// Handle Local Gallery/Camera Photo Upload & Compress
+function handlePhotoUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      // Resize to compact avatar
+      var canvas = document.createElement("canvas");
+      var ctx = canvas.getContext("2d");
+      var maxDim = 150;
+      var width = img.width;
+      var height = img.height;
+
+      if (width > height) {
+        if (width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        }
+      } else {
+        if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      uploadedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.85);
+      var preview = document.getElementById("avatar-preview-img");
+      if (preview) preview.src = uploadedPhotoBase64;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 // Auth Toggle (Login <-> Sign Up)
@@ -114,7 +146,7 @@ async function handleAuth() {
   if (isSignUpMode) {
     var fullName = document.getElementById("signup-fullname").value.trim() || email.split("@")[0];
     var dob = document.getElementById("signup-dob").value || "";
-    var avatarUrl = document.getElementById("signup-avatar").value;
+    var avatarUrl = uploadedPhotoBase64 || ("https://api.dicebear.com/7.x/bottts/svg?seed=" + encodeURIComponent(fullName));
 
     var res = await dbClient.auth.signUp({
       email: email,
@@ -135,7 +167,7 @@ async function handleAuth() {
 
     currentUser = res.data.user;
 
-    // Insert into profiles table
+    // Upsert into profiles table
     if (currentUser) {
       await dbClient.from("profiles").upsert({
         id: currentUser.id,
@@ -240,7 +272,7 @@ async function updateNewPassword() {
   } else {
     localStorage.setItem("last_password_changed_time", now.toString());
     msg.style.color = "#4ade80";
-    msg.innerText = "Password updated successfully! Redirecting...";
+    msg.innerText = "Password updated successfully! Redirecting to login...";
     setTimeout(function() {
       document.getElementById("auth-new-pass-box").classList.add("hidden");
       document.getElementById("auth-main-box").classList.remove("hidden");
@@ -254,6 +286,7 @@ async function handleLogout() {
   if (dbClient) await dbClient.auth.signOut();
   currentUser = null;
   userProfile = null;
+  uploadedPhotoBase64 = null;
   document.getElementById("app-container").classList.add("hidden");
   document.getElementById("auth-overlay").classList.remove("hidden");
   document.getElementById("auth-main-box").classList.remove("hidden");
@@ -268,7 +301,7 @@ async function launchDashboard() {
   document.getElementById("auth-overlay").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
 
-  // Populate User Profile Header
+  // Populate User Profile in Header
   if (userProfile && currentUser) {
     var nameEl = document.getElementById("user-name-display");
     var emailEl = document.getElementById("user-email-display");
@@ -293,7 +326,7 @@ async function launchDashboard() {
   await loadDataFromSupabase();
 }
 
-// Load User Data
+// Load Authenticated Data
 async function loadDataFromSupabase() {
   if (!dbClient || !currentUser) return;
 
@@ -314,7 +347,7 @@ async function loadDataFromSupabase() {
   }
 }
 
-// Add Daily Transaction
+// Add Transaction
 async function addTransaction(e) {
   e.preventDefault();
   if (!currentUser) return;
@@ -389,7 +422,7 @@ async function addLoan(e) {
   await loadDataFromSupabase();
 }
 
-// Actions
+// Action Handlers
 async function toggleSettleDebt(id, currentStatus) {
   if (dbClient) {
     await dbClient.from("debts").update({ is_settled: !currentStatus }).eq("id", id);
@@ -426,7 +459,7 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
-// Professional Consolidated Person PDF
+// Consolidated PDF Statement
 function generatePersonStatementPDF(targetPersonName) {
   var personRecords = debts.filter(function(d) {
     return d.person_name.trim().toLowerCase() === targetPersonName.trim().toLowerCase() && !d.is_settled;
@@ -587,7 +620,7 @@ function updateSummaries(dataForTotals) {
   if (elPay) elPay.innerText = "₹" + totalToPay.toLocaleString();
 }
 
-// Search & Filter
+// Filter Logic
 function applyFilters() {
   var searchInput = document.getElementById("searchInput");
   var query = searchInput ? searchInput.value.toLowerCase() : "";
@@ -763,7 +796,7 @@ function exportToCSV() {
 }
 
 // -------------------------------------------------------------
-// 🤖 AI SANDY (Gemini Smart Knowledge Engine)
+// 🤖 AI SANDY (Gemini Smart Assistant)
 // -------------------------------------------------------------
 
 function openAISandyModal() {

@@ -39,17 +39,13 @@
           <label>Date of Birth</label>
           <input type="date" id="signup-dob">
         </div>
+        
+        <!-- Gallery Photo Upload -->
         <div class="input-group">
-          <label>Choose Avatar Style</label>
-          <select id="signup-avatar" onchange="previewAvatar()">
-            <option value="https://api.dicebear.com/7.x/adventurer/svg?seed=Felix">Adventurer 1</option>
-            <option value="https://api.dicebear.com/7.x/adventurer/svg?seed=Shadow">Adventurer 2</option>
-            <option value="https://api.dicebear.com/7.x/bottts/svg?seed=Sandy">Cyber Sandy</option>
-            <option value="https://api.dicebear.com/7.x/avataaars/svg?seed=Ryan">Urban Cool</option>
-            <option value="https://api.dicebear.com/7.x/micah/svg?seed=Leo">Minimalist</option>
-          </select>
+          <label>Upload Profile Photo (From Gallery)</label>
+          <input type="file" id="signup-photo-file" accept="image/*" onchange="handlePhotoUpload(event)">
           <div class="avatar-preview-box">
-            <img id="avatar-preview-img" src="https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" alt="Avatar Preview">
+            <img id="avatar-preview-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=Sandy" alt="Profile Preview">
           </div>
         </div>
       </div>
@@ -77,8 +73,15 @@
         </div>
       </div>
 
-      <div class="creator-tag">
-        Developed & Designed with ⚡ by <strong>Sandeep Choudhary</strong>
+      <!-- Developer Verification Tag with Sandeep's Picture -->
+      <div class="creator-tag-card">
+        <div class="creator-avatar-wrap">
+          <img src="sandeep.jpg" alt="Sandeep Choudhary" class="creator-mini-pic" id="dev-photo-auth" onerror="this.src='https://api.dicebear.com/7.x/adventurer/svg?seed=Sandeep'">
+        </div>
+        <div class="creator-tag-info">
+          <span>Developed & Designed by</span>
+          <strong>Sandeep Choudhary</strong>
+        </div>
       </div>
     </div>
 
@@ -128,7 +131,10 @@
         <div class="app-logo">APEX</div>
         <div class="app-title-wrap">
           <h2>Money & Ledger Tracker</h2>
-          <span class="badge-author">by Sandeep Choudhary</span>
+          <div class="developer-pill">
+            <img src="sandeep.jpg" alt="Sandeep" class="dev-nav-img" id="dev-photo-nav" onerror="this.src='https://api.dicebear.com/7.x/adventurer/svg?seed=Sandeep'">
+            <span>Built by Sandeep Choudhary</span>
+          </div>
         </div>
       </div>
 
@@ -153,7 +159,7 @@
       </div>
     </nav>
 
-    <!-- Controls & Action Toolbar -->
+    <!-- Controls Toolbar -->
     <div class="toolbar-card">
       <div class="toolbar-left">
         <label for="monthFilter">📅 <strong>Statement Period:</strong></label>
@@ -213,7 +219,7 @@
       </div>
     </section>
 
-    <!-- Main Grid Workspace -->
+    <!-- Main Workspace Grid -->
     <div class="workspace-grid">
       <!-- Left Column: Forms -->
       <div class="forms-column">
@@ -348,7 +354,7 @@
 
       <!-- Right Column: Tables -->
       <div class="tables-column">
-        <!-- Daily Transaction History -->
+        <!-- Transaction History -->
         <div class="glass-box">
           <div class="box-head">
             <h3>📑 Transaction History</h3>
@@ -421,7 +427,7 @@
       </div>
     </div>
 
-    <!-- App Creator Footer -->
+    <!-- App Creator Footer with Sandeep's Picture -->
     <footer class="app-footer">
       <div class="footer-left">
         <div class="footer-logo">APEX FINANCE</div>
@@ -429,9 +435,12 @@
       </div>
       <div class="footer-right">
         <div class="creator-badge-box">
-          <span>Crafted with ⚡ & Passion by</span>
-          <strong>SANDEEP CHOUDHARY</strong>
-          <small>Automotive Tech & Software Engineer</small>
+          <img src="sandeep.jpg" alt="Sandeep Choudhary" class="creator-footer-photo" id="dev-photo-footer" onerror="this.src='https://api.dicebear.com/7.x/adventurer/svg?seed=Sandeep'">
+          <div class="creator-meta-text">
+            <span>Crafted with ⚡ & Passion by</span>
+            <strong>SANDEEP CHOUDHARY</strong>
+            <small>Automotive Tech & Software Engineer</small>
+          </div>
         </div>
       </div>
     </footer>
@@ -481,6 +490,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=8"></script>
+  <script src="script.js?v=9"></script>
 </body>
 </html>

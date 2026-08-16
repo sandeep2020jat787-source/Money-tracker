@@ -104,12 +104,13 @@ body {
 }
 
 .avatar-preview-box img {
-  width: 65px;
-  height: 65px;
+  width: 75px;
+  height: 75px;
   border-radius: 50%;
+  object-fit: cover;
   background: #1f2937;
   border: 2px solid var(--primary);
-  padding: 4px;
+  padding: 2px;
 }
 
 .input-group {
@@ -135,6 +136,12 @@ input, select {
   font-size: 14px;
   outline: none;
   transition: all 0.2s;
+}
+
+input[type="file"] {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 input:focus, select:focus {
@@ -221,15 +228,45 @@ input:focus, select:focus {
   font-weight: 400 !important;
 }
 
-.creator-tag {
+/* Creator Tag in Auth Card */
+.creator-tag-card {
   margin-top: 25px;
   padding-top: 15px;
   border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.creator-avatar-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #60a5fa;
+  background: #1f2937;
+}
+
+.creator-mini-pic {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.creator-tag-info {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.creator-tag-info span {
   font-size: 11px;
   color: var(--text-muted);
 }
 
-.creator-tag strong {
+.creator-tag-info strong {
+  font-size: 13px;
   color: #60a5fa;
 }
 
@@ -277,7 +314,25 @@ input:focus, select:focus {
   font-weight: 700;
 }
 
-.badge-author {
+.developer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 3px;
+}
+
+.dev-nav-img {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.developer-pill span {
   font-size: 11px;
   color: #60a5fa;
   font-weight: 600;
@@ -340,6 +395,7 @@ input:focus, select:focus {
   border-radius: 50%;
   border: 1.5px solid var(--primary);
   background: #0f172a;
+  object-fit: cover;
 }
 
 .user-info {
@@ -618,7 +674,7 @@ th {
   cursor: pointer;
 }
 
-/* Footer */
+/* Footer with Developer Showcase */
 .app-footer {
   margin-top: 40px;
   padding: 25px 30px;
@@ -649,24 +705,39 @@ th {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(99, 102, 241, 0.1));
   border: 1px solid var(--border-active);
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
-  flex-direction: column;
-  text-align: right;
+  align-items: center;
+  gap: 14px;
 }
 
-.creator-badge-box span {
+.creator-footer-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #60a5fa;
+  background: #1e293b;
+}
+
+.creator-meta-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.creator-meta-text span {
   font-size: 10px;
   color: var(--text-muted);
 }
 
-.creator-badge-box strong {
-  font-size: 13px;
+.creator-meta-text strong {
+  font-size: 14px;
   color: #60a5fa;
   letter-spacing: 0.5px;
 }
 
-.creator-badge-box small {
+.creator-meta-text small {
   font-size: 10px;
   color: #94a3b8;
 }
