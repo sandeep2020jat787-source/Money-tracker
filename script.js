@@ -95,7 +95,7 @@ async function handleAuth() {
   }
 }
 
-// Forgot Password Flow
+// Forgot Password Modal Controls
 function openForgotPasswordModal() {
   document.getElementById("auth-main-box").classList.add("hidden");
   document.getElementById("auth-forgot-box").classList.remove("hidden");
@@ -108,6 +108,7 @@ function closeForgotPasswordModal() {
   document.getElementById("forgot-msg").innerText = "";
 }
 
+// Send Recovery Email with 60-Minute Protection Check
 async function sendPasswordResetEmail() {
   var email = document.getElementById("forgot-email-input").value.trim();
   var msg = document.getElementById("forgot-msg");
@@ -116,6 +117,21 @@ async function sendPasswordResetEmail() {
     msg.style.color = "#dc2626";
     msg.innerText = "Please enter your email.";
     return;
+  }
+
+  // 60-minute cooldown check
+  var lastSentKey = "last_reset_sent_" + email.toLowerCase();
+  var lastSentTime = localStorage.getItem(lastSentKey);
+  var now = Date.now();
+
+  if (lastSentTime) {
+    var diffMinutes = Math.floor((now - parseInt(lastSentTime, 10)) / (1000 * 60));
+    if (diffMinutes < 60) {
+      var remaining = 60 - diffMinutes;
+      msg.style.color = "#dc2626";
+      msg.innerText = "You can only request password reset once in 60 min. Please try again after " + remaining + " minute(s).";
+      return;
+    }
   }
 
   var currentUrl = window.location.href.split("#")[0];
@@ -127,11 +143,13 @@ async function sendPasswordResetEmail() {
     msg.style.color = "#dc2626";
     msg.innerText = res.error.message;
   } else {
+    localStorage.setItem(lastSentKey, now.toString());
     msg.style.color = "#16a34a";
-    msg.innerText = "Recovery email sent! Please check your Inbox / Spam folder.";
+    msg.innerText = "Recovery email sent! Check your Inbox / Spam folder.";
   }
 }
 
+// Update Password with 60-Minute Cooldown Check
 async function updateNewPassword() {
   var newPass = document.getElementById("new-password-input").value.trim();
   var msg = document.getElementById("new-pass-msg");
@@ -142,14 +160,29 @@ async function updateNewPassword() {
     return;
   }
 
+  // 60-minute cooldown check on changing
+  var lastChangedTime = localStorage.getItem("last_password_changed_time");
+  var now = Date.now();
+
+  if (lastChangedTime) {
+    var diffMinutes = Math.floor((now - parseInt(lastChangedTime, 10)) / (1000 * 60));
+    if (diffMinutes < 60) {
+      var remaining = 60 - diffMinutes;
+      msg.style.color = "#dc2626";
+      msg.innerText = "Password can only be changed once in 60 min. Please try after " + remaining + " minute(s).";
+      return;
+    }
+  }
+
   var res = await dbClient.auth.updateUser({ password: newPass });
 
   if (res.error) {
     msg.style.color = "#dc2626";
     msg.innerText = res.error.message;
   } else {
+    localStorage.setItem("last_password_changed_time", now.toString());
     msg.style.color = "#16a34a";
-    msg.innerText = "Password updated successfully! Redirecting...";
+    msg.innerText = "Password updated successfully! Redirecting to login...";
     setTimeout(function() {
       document.getElementById("auth-new-pass-box").classList.add("hidden");
       document.getElementById("auth-main-box").classList.remove("hidden");
@@ -293,7 +326,7 @@ async function addLoan(e) {
   await loadDataFromSupabase();
 }
 
-// Actions Handlers
+// Action Handlers
 async function toggleSettleDebt(id, currentStatus) {
   if (dbClient) {
     await dbClient.from("debts").update({ is_settled: !currentStatus }).eq("id", id);

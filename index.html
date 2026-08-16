@@ -41,7 +41,15 @@
     <!-- Send Reset Email Card -->
     <div class="auth-box hidden" id="auth-forgot-box">
       <h2>Reset Password</h2>
-      <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Enter your registered email. We'll send a password recovery link.</p>
+      <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Enter your registered email. We'll send a password recovery link.</p>
+      
+      <!-- 60-Minute Policy Notice -->
+      <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; margin-bottom: 12px;">
+        <p style="font-size: 11px; color: #92400e; line-height: 1.4; margin: 0;">
+          ⚠️ <strong>Security Notice:</strong> You can only request a password reset once every 60 minutes. If you need to change it again, please try after 60 minutes.
+        </p>
+      </div>
+
       <input type="email" id="forgot-email-input" placeholder="Registered Email">
       <button class="btn-primary" onclick="sendPasswordResetEmail()">Send Recovery Link</button>
       <button class="btn-clear" style="margin-top: 8px; width: 100%;" onclick="closeForgotPasswordModal()">Back to Login</button>
@@ -51,7 +59,15 @@
     <!-- Set New Password Card (Triggered via Email Link) -->
     <div class="auth-box hidden" id="auth-new-pass-box">
       <h2>Set New Password</h2>
-      <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Enter your new password below</p>
+      <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Enter your new password below</p>
+
+      <!-- 60-Minute Policy Notice -->
+      <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; margin-bottom: 12px;">
+        <p style="font-size: 11px; color: #92400e; line-height: 1.4; margin: 0;">
+          ⚠️ <strong>Security Notice:</strong> You can only change your password once every 60 minutes. If you want to change it again, please try after 60 minutes.
+        </p>
+      </div>
+
       <input type="password" id="new-password-input" placeholder="New Password (min 6 chars)">
       <button class="btn-primary" onclick="updateNewPassword()">Update Password</button>
       <p id="new-pass-msg" class="error-msg"></p>
@@ -265,6 +281,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=6"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>
