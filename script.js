@@ -24,6 +24,19 @@ try {
   console.error("Init Error:", e);
 }
 
+// Payment Mode Switcher (Cash vs Online Bank Dropdown)
+function handlePaymentModeChange() {
+  var modeSelect = document.getElementById("tx-payment-mode");
+  var bankGroup = document.getElementById("bank-select-group");
+  if (!modeSelect || !bankGroup) return;
+
+  if (modeSelect.value === "Cash") {
+    bankGroup.classList.add("hidden");
+  } else {
+    bankGroup.classList.remove("hidden");
+  }
+}
+
 // Session Check on Load
 async function checkCurrentSession() {
   if (!dbClient) return;
@@ -45,7 +58,7 @@ async function checkCurrentSession() {
   }
 }
 
-// Fetch Profile from DB (Fixed 406 Error using maybeSingle)
+// Fetch Profile from DB using maybeSingle (406 Fix)
 async function fetchUserProfile() {
   if (!dbClient || !currentUser) return;
 
@@ -67,7 +80,6 @@ async function fetchUserProfile() {
         avatar_url: meta.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + encodeURIComponent(currentUser.email)
       };
 
-      // Auto-create initial profile row if missing
       await dbClient.from("profiles").upsert(userProfile);
     }
   } catch (err) {
@@ -434,6 +446,7 @@ async function launchDashboard() {
   var monthFilter = document.getElementById("monthFilter");
   if (monthFilter) monthFilter.value = currentMonth;
 
+  handlePaymentModeChange();
   await loadDataFromSupabase();
 }
 
@@ -457,14 +470,20 @@ async function loadDataFromSupabase() {
   }
 }
 
+// Add Transaction with Cash vs Bank resolution
 async function addTransaction(e) {
   e.preventDefault();
   if (!currentUser) return;
 
+  var paymentMode = document.getElementById("tx-payment-mode").value;
+  var chosenAccount = paymentMode === "Cash" 
+    ? "Cash / Wallet" 
+    : document.getElementById("tx-bank-name").value;
+
   var tx = {
     user_id: currentUser.id,
     date: document.getElementById("tx-date").value,
-    account: document.getElementById("tx-account").value,
+    account: chosenAccount,
     type: document.getElementById("tx-type").value,
     category: document.getElementById("tx-category").value,
     amount: parseFloat(document.getElementById("tx-amount").value),
@@ -479,6 +498,7 @@ async function addTransaction(e) {
   document.getElementById("tx-form").reset();
   var dateInput = document.getElementById("tx-date");
   if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+  handlePaymentModeChange();
   await loadDataFromSupabase();
 }
 
@@ -864,7 +884,7 @@ function exportToCSV() {
   }
 
   var rows = [
-    ["ID", "Date", "Category", "Type", "Amount (INR)", "Account", "Note"]
+    ["ID", "Date", "Category", "Type", "Amount (INR)", "Payment Source", "Note"]
   ];
 
   dataToExport.forEach(function (t) {
@@ -941,6 +961,10 @@ function sendQueryToAISandy() {
 function generateAISandyResponse(q) {
   var lower = q.toLowerCase();
 
+  if (lower.includes("cash") || lower.includes("bank") || lower.includes("source") || lower.includes("online")) {
+    return "When adding a transaction, select <strong>Cash / Physical Wallet</strong> for cash transactions or <strong>Online / Net Banking / UPI</strong> to select from India's major public, private, and payment banks!";
+  }
+
   if (lower.includes("pdf") || lower.includes("statement") || lower.includes("share")) {
     return "To generate a PDF statement for anyone: Go to <strong>Dues & Receivables (Ledger)</strong> on the right side. Click the <strong>📄 PDF</strong> button to download an official itemized PDF statement.";
   }
@@ -961,5 +985,5 @@ function generateAISandyResponse(q) {
     return "Apex Finance is proudly designed and built by <strong>Sandeep Choudhary</strong>, an Automotive Tech & Software Engineer!";
   }
 
-  return "I'm always here to assist you with Apex Finance! Ask me about transactions, borrower PDF statements, loans, or profile updates.";
+  return "I'm always here to assist you with Apex Finance! Ask me about cash vs bank sources, borrower PDF statements, loans, or profile updates.";
 }

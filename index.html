@@ -148,7 +148,7 @@
 
   <!-- Main Application Container -->
   <div id="app-container" class="container hidden">
-    <!-- Top Modern Navbar -->
+    <!-- Top Navbar -->
     <nav class="navbar">
       <div class="nav-left">
         <div class="app-logo">APEX</div>
@@ -247,7 +247,7 @@
     <div class="workspace-grid">
       <!-- Left Column: Forms -->
       <div class="forms-column">
-        <!-- Daily Transaction Form -->
+        <!-- Daily Transaction Form (With Cash vs Online Bank Selector) -->
         <div class="glass-box">
           <div class="box-head">
             <h3>⚡ Add Daily Transaction</h3>
@@ -260,18 +260,49 @@
                 <input type="date" id="tx-date" required>
               </div>
               <div class="input-group">
-                <label>Account</label>
-                <select id="tx-account" required>
-                  <option value="HDFC Bank">HDFC Bank</option>
-                  <option value="SBI">SBI</option>
-                  <option value="Cash">Cash / Wallet</option>
+                <label>Payment Mode</label>
+                <select id="tx-payment-mode" onchange="handlePaymentModeChange()" required>
+                  <option value="Online">Online / Net Banking / UPI</option>
+                  <option value="Cash">Cash / Physical Wallet</option>
                 </select>
               </div>
             </div>
 
+            <!-- Indian Banks Selection Dropdown (Shown when Online is selected) -->
+            <div class="input-group" id="bank-select-group">
+              <label>Select Bank / Payment Source</label>
+              <select id="tx-bank-name">
+                <option value="State Bank of India (SBI)">State Bank of India (SBI)</option>
+                <option value="HDFC Bank">HDFC Bank</option>
+                <option value="ICICI Bank">ICICI Bank</option>
+                <option value="Axis Bank">Axis Bank</option>
+                <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                <option value="Punjab National Bank (PNB)">Punjab National Bank (PNB)</option>
+                <option value="Bank of Baroda (BOB)">Bank of Baroda (BOB)</option>
+                <option value="Canara Bank">Canara Bank</option>
+                <option value="Union Bank of India">Union Bank of India</option>
+                <option value="Bank of India (BOI)">Bank of India (BOI)</option>
+                <option value="IndusInd Bank">IndusInd Bank</option>
+                <option value="IDFC FIRST Bank">IDFC FIRST Bank</option>
+                <option value="Yes Bank">Yes Bank</option>
+                <option value="Federal Bank">Federal Bank</option>
+                <option value="Central Bank of India">Central Bank of India</option>
+                <option value="Indian Bank">Indian Bank</option>
+                <option value="UCO Bank">UCO Bank</option>
+                <option value="Indian Overseas Bank (IOB)">Indian Overseas Bank (IOB)</option>
+                <option value="Punjab & Sind Bank">Punjab & Sind Bank</option>
+                <option value="AU Small Finance Bank">AU Small Finance Bank</option>
+                <option value="Bandhan Bank">Bandhan Bank</option>
+                <option value="Paytm Payments Bank / Wallet">Paytm Payments Bank / Wallet</option>
+                <option value="Airtel Payments Bank">Airtel Payments Bank</option>
+                <option value="Jio Payments Bank">Jio Payments Bank</option>
+                <option value="UPI / Other Bank">Other Online / UPI App</option>
+              </select>
+            </div>
+
             <div class="grid-2">
               <div class="input-group">
-                <label>Type</label>
+                <label>Transaction Type</label>
                 <select id="tx-type" required>
                   <option value="Expense">Expense (-)</option>
                   <option value="Income">Income (+)</option>
@@ -285,12 +316,12 @@
 
             <div class="input-group">
               <label>Category</label>
-              <input type="text" id="tx-category" placeholder="Fuel, Dining, Groceries, Salary..." required>
+              <input type="text" id="tx-category" placeholder="Fuel, Dining, Groceries, Salary, Shopping..." required>
             </div>
 
             <div class="input-group">
               <label>Note / Remarks</label>
-              <input type="text" id="tx-note" placeholder="Optional notes...">
+              <input type="text" id="tx-note" placeholder="Optional reference notes...">
             </div>
 
             <button type="submit" class="btn-glow-primary w-100">Save Transaction</button>
@@ -390,7 +421,7 @@
                 <tr>
                   <th>Date</th>
                   <th>Category</th>
-                  <th>Account</th>
+                  <th>Payment Source</th>
                   <th>Type</th>
                   <th>Amount</th>
                   <th>Action</th>
@@ -493,14 +524,14 @@
       <div class="ai-chat-body" id="ai-chat-body">
         <div class="ai-message bot">
           <strong>AI Sandy:</strong>
-          <p>Namaste! I'm <strong>AI Sandy</strong>, your personal AI assistant. How can I help you manage your finances, generate PDF receipts, or solve questions about this app?</p>
+          <p>Namaste! I'm <strong>AI Sandy</strong>, your personal AI assistant. How can I help you manage your finances, bank sources, PDF receipts, or solve questions about this app?</p>
         </div>
       </div>
 
       <div class="ai-quick-chips">
+        <button onclick="sendQuickPrompt('How do I choose between Cash and my Bank Account for payments?')">💳 Cash vs Bank Guide</button>
         <button onclick="sendQuickPrompt('How do I generate a PDF statement for my friend?')">📄 PDF Statement Help</button>
         <button onclick="sendQuickPrompt('How does the Dues & Receivables (Khata) work?')">🤝 Explain Khata Ledger</button>
-        <button onclick="sendQuickPrompt('Give me 3 smart tips to save fuel and manage monthly EMI.')">💡 Budgeting Tips</button>
         <button onclick="sendQuickPrompt('How to export monthly expense report to Excel?')">📥 Excel Export Guide</button>
       </div>
 
@@ -511,6 +542,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=11"></script>
+  <script src="script.js?v=12"></script>
 </body>
 </html>
