@@ -37,9 +37,21 @@ function handlePaymentModeChange() {
   }
 }
 
-// Dynamic Time-Based Greeting Function
+// Helper to Get Clean Display Name
+function getDisplayName() {
+  if (userProfile && userProfile.full_name && userProfile.full_name.trim() !== "") {
+    return userProfile.full_name.trim();
+  }
+  if (currentUser && currentUser.email) {
+    var raw = currentUser.email.split("@")[0];
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+  return "User";
+}
+
+// Dynamic Time-Based Greeting Function using Profile Name
 function renderUserGreeting() {
-  var name = (userProfile && userProfile.full_name) ? userProfile.full_name : "User";
+  var name = getDisplayName();
   var hour = new Date().getHours();
   var gesture = "👋 Hello";
   var greeting = "Welcome back, " + name + "!";
@@ -91,19 +103,20 @@ async function fetchUserProfile() {
   if (!dbClient || !currentUser) return;
 
   try {
-    var { data, error } = await dbClient
+    var { data } = await dbClient
       .from("profiles")
       .select("*")
       .eq("id", currentUser.id)
       .maybeSingle();
 
-    if (data) {
+    if (data && data.full_name) {
       userProfile = data;
     } else {
       var meta = currentUser.user_metadata || {};
+      var fallbackName = meta.full_name || currentUser.email.split("@")[0];
       userProfile = {
         id: currentUser.id,
-        full_name: meta.full_name || currentUser.email.split("@")[0],
+        full_name: fallbackName,
         dob: meta.dob || "",
         avatar_url: meta.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + encodeURIComponent(currentUser.email)
       };
@@ -121,7 +134,7 @@ async function fetchUserProfile() {
   }
 }
 
-// Handle Sign-Up Gallery Photo Upload
+// Handle Sign-Up Gallery Photo Upload & Compress
 function handlePhotoUpload(event) {
   var file = event.target.files[0];
   if (!file) return;
@@ -201,6 +214,7 @@ function handleEditPhotoUpload(event) {
   reader.readAsDataURL(file);
 }
 
+// Edit Profile Modal
 function openEditProfileModal() {
   if (!userProfile) return;
   document.getElementById("edit-fullname").value = userProfile.full_name || "";
@@ -215,6 +229,7 @@ function closeEditProfileModal() {
   document.getElementById("edit-profile-modal").classList.add("hidden");
 }
 
+// Save Profile Name & Details
 async function saveProfileChanges() {
   if (!currentUser || !dbClient) return;
 
@@ -224,7 +239,7 @@ async function saveProfileChanges() {
 
   if (!newName) {
     msg.style.color = "#f87171";
-    msg.innerText = "Name cannot be empty.";
+    msg.innerText = "Profile Name / Username cannot be empty.";
     return;
   }
 
@@ -249,15 +264,17 @@ async function saveProfileChanges() {
   msg.style.color = "#4ade80";
   msg.innerText = "Profile updated successfully!";
 
+  // Update Header and Greeting in real-time
   document.getElementById("user-name-display").innerText = userProfile.full_name;
   document.getElementById("user-avatar-img").src = userProfile.avatar_url;
   renderUserGreeting();
 
   setTimeout(function() {
     closeEditProfileModal();
-  }, 1000);
+  }, 900);
 }
 
+// Auth Toggle (Login <-> Sign Up)
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   var title = document.getElementById("auth-title");
@@ -272,7 +289,7 @@ function toggleAuthMode() {
 
   if (isSignUpMode) {
     title.innerText = "Create New Account";
-    subText.innerText = "Join Apex Finance & manage your cashflow seamlessly";
+    subText.innerText = "Set your profile name & start tracking wealth";
     submitBtn.innerText = "Sign Up";
     toggleText.innerText = "Already have an account?";
     toggleLink.innerText = "Sign In";
@@ -287,6 +304,7 @@ function toggleAuthMode() {
   }
 }
 
+// Auth Handler
 async function handleAuth() {
   var email = document.getElementById("auth-email").value.trim();
   var password = document.getElementById("auth-password").value.trim();
@@ -298,7 +316,8 @@ async function handleAuth() {
   }
 
   if (isSignUpMode) {
-    var fullName = document.getElementById("signup-fullname").value.trim() || email.split("@")[0];
+    var rawName = document.getElementById("signup-fullname").value.trim();
+    var fullName = rawName || email.split("@")[0];
     var dob = document.getElementById("signup-dob").value || "";
     var avatarUrl = uploadedPhotoBase64 || ("https://api.dicebear.com/7.x/bottts/svg?seed=" + encodeURIComponent(fullName));
 
@@ -318,12 +337,13 @@ async function handleAuth() {
     currentUser = res.data.user;
 
     if (currentUser) {
-      await dbClient.from("profiles").upsert({
+      userProfile = {
         id: currentUser.id,
         full_name: fullName,
         dob: dob,
         avatar_url: avatarUrl
-      });
+      };
+      await dbClient.from("profiles").upsert(userProfile);
     }
 
     await fetchUserProfile();
@@ -340,6 +360,7 @@ async function handleAuth() {
   }
 }
 
+// Forgot Password Flow
 function openForgotPasswordModal() {
   document.getElementById("auth-main-box").classList.add("hidden");
   document.getElementById("auth-forgot-box").classList.remove("hidden");
@@ -429,6 +450,7 @@ async function updateNewPassword() {
   }
 }
 
+// Logout
 async function handleLogout() {
   if (dbClient) await dbClient.auth.signOut();
   currentUser = null;
@@ -443,19 +465,19 @@ async function handleLogout() {
   document.getElementById("auth-password").value = "";
 }
 
+// Launch Dashboard
 async function launchDashboard() {
   document.getElementById("auth-overlay").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
 
-  if (userProfile && currentUser) {
-    var nameEl = document.getElementById("user-name-display");
-    var emailEl = document.getElementById("user-email-display");
-    var avatarEl = document.getElementById("user-avatar-img");
+  // Profile display name
+  var nameEl = document.getElementById("user-name-display");
+  var emailEl = document.getElementById("user-email-display");
+  var avatarEl = document.getElementById("user-avatar-img");
 
-    if (nameEl) nameEl.innerText = userProfile.full_name || "User";
-    if (emailEl) emailEl.innerText = currentUser.email;
-    if (avatarEl) avatarEl.src = userProfile.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=Sandy";
-  }
+  if (nameEl) nameEl.innerText = getDisplayName();
+  if (emailEl && currentUser) emailEl.innerText = currentUser.email;
+  if (avatarEl) avatarEl.src = (userProfile && userProfile.avatar_url) ? userProfile.avatar_url : "https://api.dicebear.com/7.x/bottts/svg?seed=Sandy";
 
   renderUserGreeting();
 
@@ -640,7 +662,7 @@ function generatePersonStatementPDF(targetPersonName) {
   doc.setFont("helvetica", "normal");
   doc.text("Statement Date: " + new Date().toLocaleDateString('en-IN'), 14, 40);
   doc.text("Statement For: " + targetPersonName, 14, 46);
-  doc.text("Account Created By: " + (userProfile ? userProfile.full_name : "User"), 14, 52);
+  doc.text("Account Created By: " + getDisplayName(), 14, 52);
 
   var totalLent = 0;
   var totalBorrowed = 0;
@@ -985,8 +1007,8 @@ function generateAISandyResponse(q) {
     return "Click the green <strong>📥 Export Excel (CSV)</strong> button at the top right toolbar to download your lifetime or monthly records.";
   }
 
-  if (lower.includes("profile") || lower.includes("edit") || lower.includes("photo") || lower.includes("picture")) {
-    return "You can update your profile name, date of birth, or profile gallery photo anytime by clicking the gear icon (⚙️) next to your logout button in the top navigation bar.";
+  if (lower.includes("profile") || lower.includes("edit") || lower.includes("name") || lower.includes("username")) {
+    return "You can customize your Profile Name / Username, date of birth, or profile gallery photo anytime by clicking the gear icon (⚙️) next to the logout button in the top navigation bar.";
   }
 
   if (lower.includes("creator") || lower.includes("who made") || lower.includes("sandeep") || lower.includes("developer")) {
