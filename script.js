@@ -182,6 +182,58 @@ function toggleSettledView() {
   renderDebtTable();
 }
 
+// PDF Generation for Individual Record
+function generatePersonStatementPDF(debtId) {
+  var item = debts.find(function(d) { return d.id === debtId; });
+  if (!item) return;
+
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF();
+
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 0, 210, 28, 'F');
+  
+  doc.setFontSize(18);
+  doc.setTextColor(255, 255, 255);
+  doc.text("PAYMENT STATEMENT & RECEIPT", 14, 18);
+
+  doc.setFontSize(10);
+  doc.setTextColor(50, 50, 50);
+  doc.text("Generated On: " + new Date().toLocaleDateString('en-IN'), 14, 38);
+  doc.text("Statement For: " + item.person_name, 14, 44);
+  doc.text("Status: " + (item.is_settled ? "SETTLED / PAID" : "PENDING DUES"), 14, 50);
+
+  var tableData = [
+    ["Type / Relationship", item.type === "give" ? "Receivable (Lent / Given)" : "Payable (Borrowed)"],
+    ["Total Amount", "Rs. " + parseFloat(item.amount).toLocaleString('en-IN')],
+    ["Purpose / Category", item.reason],
+    ["Expected Due Date", item.due_date ? item.due_date : "Not Specified"],
+    ["Remarks / Note", item.note ? item.note : "None"],
+    ["Payment Status", item.is_settled ? "Cleared" : "Unsettled / Active"]
+  ];
+
+  doc.autoTable({
+    startY: 56,
+    theme: 'grid',
+    head: [['Particulars', 'Details']],
+    body: tableData,
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
+    styles: { fontSize: 11, cellPadding: 6 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 70 },
+      1: { cellWidth: 110 }
+    }
+  });
+
+  var finalY = doc.lastAutoTable.finalY + 15;
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 120);
+  doc.text("This is an electronically generated statement of record.", 14, finalY);
+
+  var safeName = item.person_name.replace(/[^a-zA-Z0-9]/g, "_");
+  doc.save("Statement_" + safeName + ".pdf");
+}
+
 // Summary Calculation
 function updateSummaries(dataForTotals) {
   var dataList = dataForTotals || transactions;
@@ -268,7 +320,7 @@ function filterTransactions() {
   applyFilters();
 }
 
-// Render DOM Tables
+// Render Tables
 function renderTransactionTable(dataToRender) {
   var data = dataToRender || transactions;
   var txList = document.getElementById("tx-list");
@@ -317,6 +369,7 @@ function renderDebtTable() {
       "<td>₹" + parseFloat(d.amount).toLocaleString() + "</td>" +
       "<td>" + (d.due_date || "—") + "</td>" +
       '<td>' +
+        '<button class="btn-pdf" onclick="generatePersonStatementPDF(' + d.id + ')">📄 PDF</button>' +
         '<button class="btn-settle" onclick="toggleSettleDebt(' + d.id + ', ' + d.is_settled + ')">' + (d.is_settled ? 'Reopen' : '✓ Settle') + '</button>' +
         '<button class="btn-del" onclick="deleteDebt(' + d.id + ')">Del</button>' +
       '</td>';
@@ -345,7 +398,7 @@ function renderAll() {
   applyFilters();
 }
 
-// Mobile Compatible CSV / Excel Export
+// Mobile CSV Export
 function exportToCSV() {
   var selectedMonth = document.getElementById("monthFilter").value;
   var dataToExport = transactions;
@@ -394,7 +447,7 @@ function exportToCSV() {
   URL.revokeObjectURL(url);
 }
 
-// Security & Password Reset Handlers
+// Security & Password Handlers
 function openForgotModal() {
   document.getElementById("forgot-modal").classList.remove("hidden");
 }
