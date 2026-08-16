@@ -49,39 +49,45 @@ function getDisplayName() {
   return "User";
 }
 
-// Dynamic Greeting Gesture
+// Dynamic Greeting Gesture with Glowing Username
 function renderUserGreeting() {
   var name = getDisplayName();
   var hour = new Date().getHours();
   var gesture = "👋 Hello";
-  var greeting = "Welcome back, " + name + "!";
+  var greetingPrefix = "Welcome back, ";
+  var greetingSuffix = "! Ready to optimize your cash flow today?";
 
   if (hour >= 4 && hour < 12) {
     gesture = "🌅 Good Morning";
-    greeting = "Rise & Shine, " + name + "! Ready to track today's expenses?";
+    greetingPrefix = "Rise & Shine, ";
+    greetingSuffix = "! Ready to track today's expenses?";
   } else if (hour >= 12 && hour < 17) {
     gesture = "☀️ Good Afternoon";
-    greeting = "Hope your day is going well, " + name + "! Here's your financial summary.";
+    greetingPrefix = "Hope your day is going well, ";
+    greetingSuffix = "! Here's your financial overview.";
   } else if (hour >= 17 && hour < 22) {
     gesture = "🌆 Good Evening";
-    greeting = "Good Evening, " + name + "! Time to review today's spending.";
+    greetingPrefix = "Good Evening, ";
+    greetingSuffix = "! Time to review today's spending.";
   } else {
     gesture = "🌙 Late Night Check";
-    greeting = "Burning the midnight oil, " + name + "? Your finances are secure.";
+    greetingPrefix = "Burning the midnight oil, ";
+    greetingSuffix = "? Your finances are secure.";
   }
 
   var gestureEl = document.getElementById("greeting-gesture");
   var headingEl = document.getElementById("user-greeting-heading");
 
   if (gestureEl) gestureEl.innerText = gesture;
-  if (headingEl) headingEl.innerText = greeting;
+  if (headingEl) {
+    headingEl.innerHTML = greetingPrefix + '<span class="glow-user-name">' + name + '</span>' + greetingSuffix;
+  }
 }
 
 // WhatsApp Dispatcher Function
 function sendWhatsAppReceipt(debtObj) {
   if (!debtObj || !debtObj.phone) return;
 
-  // Clean phone number format (Add 91 if 10 digit Indian number)
   var cleanPhone = debtObj.phone.replace(/[^0-9]/g, "");
   if (cleanPhone.length === 10) {
     cleanPhone = "91" + cleanPhone;
@@ -606,7 +612,6 @@ async function addDebt(e) {
     if (res.error) alert("Save Error: " + res.error.message);
   }
 
-  // If phone number entered, auto-dispatch formatted WhatsApp statement
   if (phoneVal) {
     sendWhatsAppReceipt(debt);
   }
@@ -878,7 +883,6 @@ function renderTransactionTable(dataToRender) {
   });
 }
 
-// Render Dues & Receivables with WhatsApp Button
 function renderDebtTable() {
   var debtList = document.getElementById("debt-list");
   var badge = document.getElementById("debt-count-badge");
@@ -1061,6 +1065,10 @@ function generateAISandyResponse(q) {
 
   if (lower.includes("excel") || lower.includes("csv") || lower.includes("export") || lower.includes("download")) {
     return "Click the green <strong>📥 Export Excel (CSV)</strong> button at the top right toolbar to download your lifetime or monthly records.";
+  }
+
+  if (lower.includes("profile") || lower.includes("edit") || lower.includes("name") || lower.includes("username")) {
+    return "You can customize your Profile Name / Username, date of birth, or profile gallery photo anytime by clicking the gear icon (⚙️) next to the logout button in the top navigation bar.";
   }
 
   if (lower.includes("creator") || lower.includes("who made") || lower.includes("sandeep") || lower.includes("developer")) {
