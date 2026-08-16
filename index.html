@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Finance Tracker</title>
+  
+  <!-- Yeh line hona sabse zaroori hai -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Password Protection Screen -->
+  <div id="auth-overlay" class="overlay">
+    <div class="auth-box">
+      <h2>Enter Security PIN</h2>
+      <input type="password" id="pin-input" placeholder="Enter PIN (Default: 1234)">
+      <button onclick="unlockApp()">Unlock</button>
+      <p id="pin-error" class="error-msg"></p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app-container" class="container hidden">
+    <header>
+      <h1>My Money Tracker</h1>
+      <div class="search-bar">
+        <input type="text" id="searchInput" onkeyup="filterTransactions()" placeholder="Search transactions, categories, accounts...">
+      </div>
+    </header>
+
+    <!-- Overview Cards -->
+    <section class="summary-cards">
+      <div class="card total-balance">
+        <h3>Total Bank Balance</h3>
+        <p id="total-balance-val">₹0</p>
+      </div>
+      <div class="card total-spent">
+        <h3>Total Spent Today</h3>
+        <p id="today-spent-val">₹0</p>
+      </div>
+      <div class="card total-emi">
+        <h3>Active EMI Burden</h3>
+        <p id="total-emi-val">₹0 /mo</p>
+      </div>
+    </section>
+
+    <div class="grid-layout">
+      <!-- Left Column: Forms -->
+      <section class="form-section">
+        <!-- Daily Expense Entry Form -->
+        <div class="box">
+          <h2>Add Daily Transaction</h2>
+          <form id="tx-form" onsubmit="addTransaction(event)">
+            <label>Date</label>
+            <input type="date" id="tx-date" required>
+
+            <label>Account</label>
+            <select id="tx-account" required>
+              <option value="HDFC Bank">HDFC Bank</option>
+              <option value="SBI">SBI</option>
+              <option value="Cash">Cash / Other</option>
+            </select>
+
+            <label>Type</label>
+            <select id="tx-type" required>
+              <option value="Expense">Expense (-)</option>
+              <option value="Income">Income (+)</option>
+            </select>
+
+            <label>Category</label>
+            <input type="text" id="tx-category" placeholder="Food, Fuel, Grocery..." required>
+
+            <label>Amount (₹)</label>
+            <input type="number" id="tx-amount" placeholder="500" required>
+
+            <label>Note / Description</label>
+            <input type="text" id="tx-note" placeholder="Dinner with friends...">
+
+            <button type="submit" class="btn-primary">Add Entry</button>
+          </form>
+        </div>
+
+        <!-- Loan & EMI Section -->
+        <div class="box">
+          <h2>Add Loan / EMI Record</h2>
+          <form id="loan-form" onsubmit="addLoan(event)">
+            <label>Loan Name</label>
+            <input type="text" id="loan-name" placeholder="Bike Loan, Personal Loan" required>
+
+            <label>Monthly EMI (₹)</label>
+            <input type="number" id="loan-emi" placeholder="4500" required>
+
+            <label>Remaining Principal (₹)</label>
+            <input type="number" id="loan-remaining" placeholder="85000" required>
+
+            <label>Due Date of Month</label>
+            <input type="number" id="loan-date" placeholder="5" min="1" max="31" required>
+
+            <button type="submit" class="btn-secondary">Save Loan</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Right Column: Tables & Lists -->
+      <section class="records-section">
+        <!-- Daily Transaction History -->
+        <div class="box">
+          <h2>Transaction History</h2>
+          <div class="table-wrapper">
+            <table id="tx-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th>Account</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="tx-list"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Active Loans Table -->
+        <div class="box">
+          <h2>Active Loans & EMIs</h2>
+          <div class="table-wrapper">
+            <table id="loan-table">
+              <thead>
+                <tr>
+                  <th>Loan</th>
+                  <th>Monthly EMI</th>
+                  <th>Remaining</th>
+                  <th>Due Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="loan-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+ <script src="script.js?v=2"></script>
+</body>
+</html>
